@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice v6
+-- 540CHEATS | Anime Dice v7 - Auto Hide
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -16,15 +16,11 @@ local DARK = {
 }
 
 local TweenService = game:GetService("TweenService")
-
 local function safeTween(i, d, p)
     if not i or not i.Parent then return end
     pcall(function() TweenService:Create(i, TweenInfo.new(d), p):Play() end)
 end
 
--- =====================================================
--- KEY VALIDATION
--- =====================================================
 local function validateKey(userKey)
     if not userKey or userKey == "" then return false, "ไม่มี key" end
     local ok, response = pcall(function() return game:HttpGet(KEY_URL, true) end)
@@ -37,10 +33,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN SCRIPT — ANIME DICE v6 ★★★
+-- ★★★ MAIN SCRIPT — ANIME DICE v7 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v6 starting...")
+    print("[540CHEATS] Anime Dice v7 starting...")
 
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -48,59 +44,25 @@ local function runMainScript()
     local LP = Players.LocalPlayer
     local PG = LP:WaitForChild("PlayerGui")
 
-    -- ===== REMOTE =====
     local Network = RS:WaitForChild("Network", 10)
     local SetAutoRoll, RollDice
     if Network and Network:FindFirstChild("RollService") then
         local RSvc = Network.RollService
-        if RSvc:FindFirstChild("RE") then
-            SetAutoRoll = RSvc.RE:FindFirstChild("SetAutoRoll")
-        end
-        if RSvc:FindFirstChild("RF") then
-            RollDice = RSvc.RF:FindFirstChild("RollDice")
-        end
+        if RSvc:FindFirstChild("RE") then SetAutoRoll = RSvc.RE:FindFirstChild("SetAutoRoll") end
+        if RSvc:FindFirstChild("RF") then RollDice = RSvc.RF:FindFirstChild("RollDice") end
     end
     print("[540CHEATS] SetAutoRoll:", SetAutoRoll ~= nil, "| RollDice:", RollDice ~= nil)
 
     local CFG = {
         AutoRoll = false, RollDelay = 0.1,
+        AutoHide = true,           -- ★ ใหม่: auto hide
         AutoSkip = false, AutoKeep = false,
         AutoUpgrade = false, UpgradeDelay = 1,
         AutoSell = false, AutoRebirth = false,
         RollCount = 0,
     }
 
-    -- ===== NATIVE AUTO ROLL (ใช้ remote ตรงๆ) =====
-    local lastAutoRollState = nil
-    task.spawn(function()
-        while true do
-            task.wait(0.5)
-            if CFG.AutoRoll ~= lastAutoRollState then
-                lastAutoRollState = CFG.AutoRoll
-                if SetAutoRoll then
-                    pcall(function()
-                        SetAutoRoll:FireServer(CFG.AutoRoll)
-                        print("[540CHEATS] SetAutoRoll →", CFG.AutoRoll)
-                    end)
-                end
-            end
-        end
-    end)
-
-    -- ===== FALLBACK: RollDice invoke =====
-    task.spawn(function()
-        while true do
-            task.wait(CFG.RollDelay)
-            if CFG.AutoRoll and RollDice and not SetAutoRoll then
-                pcall(function()
-                    RollDice:InvokeServer()
-                    CFG.RollCount = CFG.RollCount + 1
-                end)
-            end
-        end
-    end)
-
-    -- ===== SILENT CLICK (Activated + MouseButton1Click) =====
+    -- ===== SILENT CLICK =====
     local function silentClick(btn)
         if not btn then return false end
         local fired = false
@@ -136,6 +98,82 @@ local function runMainScript()
         end
         return nil
     end
+
+    -- ★ หาปุ่ม Hide ด้วยชื่อหลายแบบ
+    local function findHideButton()
+        local names = {"Hide", "Hidden", "HiddenRoll", "HideRoll", "HideButton", "HideToggle"}
+        for _, n in ipairs(names) do
+            local b = findButton(n)
+            if b then return b, n end
+        end
+        -- fallback: หาปุ่มที่อยู่ใกล้ปุ่ม AutoRoll
+        local autoBtn = findButton("AutoRoll") or findButton("Auto")
+        if autoBtn and autoBtn.Parent then
+            for _, sibling in ipairs(autoBtn.Parent:GetChildren()) do
+                if (sibling:IsA("TextButton") or sibling:IsA("ImageButton")) and sibling ~= autoBtn then
+                    if sibling.Name:lower():find("hide") or sibling.Name:lower():find("hidden") then
+                        return sibling, sibling.Name
+                    end
+                end
+            end
+        end
+        return nil, nil
+    end
+
+    -- ★ AUTO HIDE — คลิก Hide เมื่อเปิด Auto Roll
+    local lastHideState = nil
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            local shouldHide = CFG.AutoRoll and CFG.AutoHide
+            if shouldHide ~= lastHideState then
+                lastHideState = shouldHide
+                if shouldHide then
+                    local btn, name = findHideButton()
+                    if btn then
+                        silentClick(btn)
+                        print("[540CHEATS] Auto Hide → clicked:", name)
+                    else
+                        print("[540CHEATS] Auto Hide → button not found")
+                    end
+                end
+            end
+            -- ถ้า Auto Roll เปิดอยู่ ให้กด Hide เรื่อยๆ (กันหลุด)
+            if CFG.AutoRoll and CFG.AutoHide then
+                local btn = findHideButton()
+                if btn then silentClick(btn) end
+            end
+        end
+    end)
+
+    -- ===== NATIVE AUTO ROLL =====
+    local lastAutoRollState = nil
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            if CFG.AutoRoll ~= lastAutoRollState then
+                lastAutoRollState = CFG.AutoRoll
+                if SetAutoRoll then
+                    pcall(function()
+                        SetAutoRoll:FireServer(CFG.AutoRoll)
+                        print("[540CHEATS] SetAutoRoll →", CFG.AutoRoll)
+                    end)
+                end
+            end
+        end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait(CFG.RollDelay)
+            if CFG.AutoRoll and RollDice and not SetAutoRoll then
+                pcall(function()
+                    RollDice:InvokeServer()
+                    CFG.RollCount = CFG.RollCount + 1
+                end)
+            end
+        end
+    end)
 
     task.spawn(function()
         while true do
@@ -279,7 +317,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice v6"
+    headerTitle.Text = "540CHEATS | Anime Dice v7"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -290,7 +328,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "native auto-roll"
+    headerSub.Text = "auto-roll + auto-hide"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -522,6 +560,7 @@ local function runMainScript()
     end
 
     makeToggle(pages["Main"], "Auto Roll (Native)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
+    makeToggle(pages["Main"], "Auto Hide (Silent)", CFG.AutoHide, function(v) CFG.AutoHide = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
@@ -532,9 +571,9 @@ local function runMainScript()
     makeToggle(pages["Sell"], "Auto Sell", CFG.AutoSell, function(v) CFG.AutoSell = v end)
 
     local info = Instance.new("TextLabel")
-    info.Size = UDim2.new(1, 0, 0, 200)
+    info.Size = UDim2.new(1, 0, 0, 220)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v6\n\n  ✓ Auto Roll (Native Remote)\n  ✓ SetAutoRoll:FireServer()\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v7\n\n  ✓ Auto Roll (Native Remote)\n  ✓ Auto Hide (กด Hide เอง)\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -581,7 +620,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v6"
+    watermark.Text = "540CHEATS | Anime Dice v7"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -591,7 +630,7 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v6 loaded")
+    print("[540CHEATS] Anime Dice v7 loaded")
 end
 
 -- =====================================================
@@ -653,7 +692,7 @@ local function showLoadingScreen(callback)
     title.Size = UDim2.new(1, 0, 0, 24)
     title.Position = UDim2.new(0, 0, 0, 90)
     title.BackgroundTransparency = 1
-    title.Text = "540CHEATS | Anime Dice v6"
+    title.Text = "540CHEATS | Anime Dice v7"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Font = FONT
@@ -975,5 +1014,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing Anime Dice v6...")
+print("[540CHEATS] Initializing Anime Dice v7...")
 showKeyPrompt()
