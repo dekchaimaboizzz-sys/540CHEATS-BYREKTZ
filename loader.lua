@@ -1,27 +1,41 @@
 -- =====================================================
--- 540CHEATS v24 | Key System + Full Script
+-- 540CHEATS v25 | Key + Loading + Full Script
 -- =====================================================
 
--- ★★★ CONFIG ★★★
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
 local SCRIPT_KEY_FILE = "540cheats_key.txt"
+
+local FONT = Enum.Font.RobotoMono
+local DARK = {
+    bg = Color3.fromRGB(12, 12, 15),
+    sidebar = Color3.fromRGB(15, 15, 20),
+    header = Color3.fromRGB(18, 18, 24),
+    headerAccent = Color3.fromRGB(0, 200, 255),
+    item = Color3.fromRGB(25, 25, 30),
+    text = Color3.fromRGB(220, 220, 230),
+    subtext = Color3.fromRGB(120, 120, 135),
+    accent = Color3.fromRGB(0, 200, 255),
+    border = Color3.fromRGB(35, 35, 45),
+    toggleOn = Color3.fromRGB(0, 150, 255),
+    toggleOff = Color3.fromRGB(45, 45, 55),
+    success = Color3.fromRGB(0, 200, 80),
+    danger = Color3.fromRGB(200, 50, 60),
+}
+
+local TweenService = game:GetService("TweenService")
 
 -- =====================================================
 -- KEY VALIDATION
 -- =====================================================
 local function validateKey(userKey)
     if not userKey or userKey == "" then return false, "ไม่มี key" end
-    
     local ok, response = pcall(function()
         return game:HttpGet(KEY_URL, true)
     end)
     if not ok then return false, "เชื่อมต่อไม่สำเร็จ" end
-    
     local cleanInput = tostring(userKey):gsub("%s+", "")
     for line in response:gmatch("[^\r\n]+") do
-        if line:gsub("%s+", "") == cleanInput then
-            return true
-        end
+        if line:gsub("%s+", "") == cleanInput then return true end
     end
     return false, "Key ไม่ถูกต้อง"
 end
@@ -41,7 +55,531 @@ local function saveKey(key)
 end
 
 -- =====================================================
--- ★★★ MAIN SCRIPT (v24) ★★★
+-- ★★★ LOADING SCREEN ★★★
+-- =====================================================
+local function showLoadingScreen(callback)
+    local LP = game:GetService("Players").LocalPlayer
+    local playerGui = LP:WaitForChild("PlayerGui")
+    
+    local loadGui = Instance.new("ScreenGui")
+    loadGui.Name = "540CHEATS_Loading"
+    loadGui.ResetOnSpawn = false
+    loadGui.IgnoreGuiInset = true
+    loadGui.DisplayOrder = 9999
+    loadGui.Parent = playerGui
+    
+    -- Overlay
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.3
+    overlay.BorderSizePixel = 0
+    overlay.Parent = loadGui
+    
+    -- Card
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(0, 420, 0, 200)
+    card.Position = UDim2.new(0.5, -210, 0.5, -100)
+    card.BackgroundColor3 = DARK.bg
+    card.BorderSizePixel = 0
+    card.BackgroundTransparency = 1
+    card.Parent = loadGui
+    local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 14); cc.Parent = card
+    local cs = Instance.new("UIStroke"); cs.Color = DARK.accent; cs.Thickness = 2; cs.Transparency = 1; cs.Parent = card
+    
+    -- Header
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1, 0, 0, 54)
+    header.BackgroundColor3 = DARK.header
+    header.BorderSizePixel = 0
+    header.BackgroundTransparency = 1
+    header.Parent = card
+    local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
+    
+    local hbBottom = Instance.new("Frame")
+    hbBottom.Size = UDim2.new(1, 0, 0, 12)
+    hbBottom.Position = UDim2.new(0, 0, 1, -12)
+    hbBottom.BackgroundColor3 = DARK.header
+    hbBottom.BorderSizePixel = 0
+    hbBottom.BackgroundTransparency = 1
+    hbBottom.Parent = header
+    
+    -- Logo container
+    local logoBg = Instance.new("Frame")
+    logoBg.Size = UDim2.new(0, 34, 0, 34)
+    logoBg.Position = UDim2.new(0, 14, 0, 10)
+    logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    logoBg.BorderSizePixel = 0
+    logoBg.BackgroundTransparency = 1
+    logoBg.Parent = header
+    local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
+    local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 1; lbgs.Parent = logoBg
+    
+    local icon = Instance.new("ImageLabel")
+    icon.Size = UDim2.new(0, 26, 0, 26)
+    icon.Position = UDim2.new(0.5, -13, 0.5, -13)
+    icon.BackgroundTransparency = 1
+    icon.Image = "rbxassetid://86571453491468"
+    icon.ImageTransparency = 1
+    icon.ScaleType = Enum.ScaleType.Fit
+    icon.Parent = logoBg
+    
+    task.spawn(function()
+        local ok, loaded = pcall(function() return icon.IsLoaded end)
+        if not ok or not loaded then
+            task.wait(0.5)
+            if not icon.IsLoaded then
+                icon:Destroy()
+                local e = Instance.new("TextLabel")
+                e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
+                e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.TextTransparency = 1
+                e.Parent = logoBg
+                TweenService:Create(e, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+            end
+        end
+    end)
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0, 200, 0, 18)
+    title.Position = UDim2.new(0, 58, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "540CHEATS"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Font = FONT
+    title.TextSize = 14
+    title.TextTransparency = 1
+    title.Parent = header
+    
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(0, 200, 0, 14)
+    subtitle.Position = UDim2.new(0, 58, 0, 29)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "discord.gg/540shop"
+    subtitle.TextColor3 = DARK.subtext
+    subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.Font = FONT
+    subtitle.TextSize = 10
+    subtitle.TextTransparency = 1
+    subtitle.Parent = header
+    
+    -- Progress section
+    local progressLabel = Instance.new("TextLabel")
+    progressLabel.Size = UDim2.new(1, -40, 0, 20)
+    progressLabel.Position = UDim2.new(0, 20, 0, 80)
+    progressLabel.BackgroundTransparency = 1
+    progressLabel.Text = "> Loading..."
+    progressLabel.TextColor3 = DARK.accent
+    progressLabel.TextXAlignment = Enum.TextXAlignment.Left
+    progressLabel.Font = FONT
+    progressLabel.TextSize = 12
+    progressLabel.TextTransparency = 1
+    progressLabel.Parent = card
+    
+    local percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(1, -40, 0, 20)
+    percentLabel.Position = UDim2.new(0, 20, 0, 80)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Text = "0%"
+    percentLabel.TextColor3 = DARK.accent
+    percentLabel.TextXAlignment = Enum.TextXAlignment.Right
+    percentLabel.Font = FONT
+    percentLabel.TextSize = 12
+    percentLabel.TextTransparency = 1
+    percentLabel.Parent = card
+    
+    -- Progress bar
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -40, 0, 8)
+    barBg.Position = UDim2.new(0, 20, 0, 110)
+    barBg.BackgroundColor3 = DARK.toggleOff
+    barBg.BorderSizePixel = 0
+    barBg.BackgroundTransparency = 1
+    barBg.Parent = card
+    local bbc = Instance.new("UICorner"); bbc.CornerRadius = UDim.new(1, 0); bbc.Parent = barBg
+    
+    local barFill = Instance.new("Frame")
+    barFill.Size = UDim2.new(0, 0, 1, 0)
+    barFill.BackgroundColor3 = DARK.accent
+    barFill.BorderSizePixel = 0
+    barFill.Parent = barBg
+    local bfc = Instance.new("UICorner"); bfc.CornerRadius = UDim.new(1, 0); bfc.Parent = barFill
+    
+    -- Status text
+    local statusText = Instance.new("TextLabel")
+    statusText.Size = UDim2.new(1, -40, 0, 16)
+    statusText.Position = UDim2.new(0, 20, 1, -30)
+    statusText.BackgroundTransparency = 1
+    statusText.Text = "Starting..."
+    statusText.TextColor3 = DARK.subtext
+    statusText.TextXAlignment = Enum.TextXAlignment.Left
+    statusText.Font = FONT
+    statusText.TextSize = 10
+    statusText.TextTransparency = 1
+    statusText.Parent = card
+    
+    -- Fade in
+    task.spawn(function()
+        TweenService:Create(card, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(cs, TweenInfo.new(0.3), {Transparency = 0}):Play()
+        TweenService:Create(header, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(hbBottom, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(logoBg, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(lbgs, TweenInfo.new(0.3), {Transparency = 0.5}):Play()
+        TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(subtitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(progressLabel, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(percentLabel, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(barBg, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(statusText, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        if not icon.Parent then return end
+        TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
+    end)
+    
+    -- Animate progress
+    task.spawn(function()
+        task.wait(0.4)
+        
+        local steps = {
+            { pct = 15, text = "Loading modules...", wait = 0.3 },
+            { pct = 30, text = "Preparing UI...", wait = 0.3 },
+            { pct = 50, text = "Loading ESP...", wait = 0.4 },
+            { pct = 70, text = "Loading Aimbot...", wait = 0.3 },
+            { pct = 85, text = "Applying settings...", wait = 0.3 },
+            { pct = 100, text = "Ready!", wait = 0.5 },
+        }
+        
+        for _, step in ipairs(steps) do
+            statusText.Text = step.text
+            TweenService:Create(barFill, TweenInfo.new(step.wait, Enum.EasingStyle.Quad), {
+                Size = UDim2.new(step.pct / 100, 0, 1, 0)
+            }):Play()
+            
+            -- Animate percentage
+            local startPct = tonumber(percentLabel.Text:gsub("%%","")) or 0
+            local endPct = step.pct
+            local duration = step.wait
+            local elapsed = 0
+            local fps = 30
+            for i = 1, math.floor(duration * fps) do
+                task.wait(1/fps)
+                elapsed = elapsed + 1/fps
+                local p = math.clamp(elapsed / duration, 0, 1)
+                local curr = math.floor(startPct + (endPct - startPct) * p)
+                percentLabel.Text = curr .. "%"
+            end
+            percentLabel.Text = endPct .. "%"
+        end
+        
+        task.wait(0.3)
+        
+        -- Fade out
+        TweenService:Create(card, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(cs, TweenInfo.new(0.4), {Transparency = 1}):Play()
+        TweenService:Create(header, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(hbBottom, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(logoBg, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(lbgs, TweenInfo.new(0.4), {Transparency = 1}):Play()
+        TweenService:Create(title, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(subtitle, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(progressLabel, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(percentLabel, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        TweenService:Create(barBg, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(statusText, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+        if icon and icon.Parent then
+            TweenService:Create(icon, TweenInfo.new(0.4), {ImageTransparency = 1}):Play()
+        end
+        TweenService:Create(overlay, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+        
+        task.wait(0.45)
+        loadGui:Destroy()
+        
+        -- Call main
+        if callback then callback() end
+    end)
+end
+
+-- =====================================================
+-- ★★★ KEY PROMPT (v24 theme) ★★★
+-- =====================================================
+local function showKeyPrompt()
+    local LP = game:GetService("Players").LocalPlayer
+    local playerGui = LP:WaitForChild("PlayerGui")
+    
+    local keyGui = Instance.new("ScreenGui")
+    keyGui.Name = "540CHEATS_Key"
+    keyGui.ResetOnSpawn = false
+    keyGui.IgnoreGuiInset = true
+    keyGui.DisplayOrder = 9999
+    keyGui.Parent = playerGui
+    
+    -- Overlay
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.4
+    overlay.BorderSizePixel = 0
+    overlay.Parent = keyGui
+    
+    -- Card
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(0, 420, 0, 280)
+    card.Position = UDim2.new(0.5, -210, 0.5, -140)
+    card.BackgroundColor3 = DARK.bg
+    card.BorderSizePixel = 0
+    card.BackgroundTransparency = 1
+    card.Parent = keyGui
+    local bgc = Instance.new("UICorner"); bgc.CornerRadius = UDim.new(0, 14); bgc.Parent = card
+    local bgs = Instance.new("UIStroke"); bgs.Color = DARK.accent; bgs.Thickness = 2; bgs.Transparency = 1; bgs.Parent = card
+    
+    -- Header (เหมือน v24)
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1, 0, 0, 54)
+    header.BackgroundColor3 = DARK.header
+    header.BorderSizePixel = 0
+    header.BackgroundTransparency = 1
+    header.Parent = card
+    local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
+    
+    local hbBottom = Instance.new("Frame")
+    hbBottom.Size = UDim2.new(1, 0, 0, 12)
+    hbBottom.Position = UDim2.new(0, 0, 1, -12)
+    hbBottom.BackgroundColor3 = DARK.header
+    hbBottom.BorderSizePixel = 0
+    hbBottom.BackgroundTransparency = 1
+    hbBottom.Parent = header
+    
+    local accentLine = Instance.new("Frame")
+    accentLine.Size = UDim2.new(1, -24, 0, 1)
+    accentLine.Position = UDim2.new(0, 12, 1, -1)
+    accentLine.BackgroundColor3 = DARK.headerAccent
+    accentLine.BorderSizePixel = 0
+    accentLine.BackgroundTransparency = 1
+    accentLine.Parent = header
+    
+    local logoBg = Instance.new("Frame")
+    logoBg.Size = UDim2.new(0, 34, 0, 34)
+    logoBg.Position = UDim2.new(0, 14, 0, 10)
+    logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    logoBg.BorderSizePixel = 0
+    logoBg.BackgroundTransparency = 1
+    logoBg.Parent = header
+    local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
+    local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 1; lbgs.Parent = logoBg
+    
+    local icon = Instance.new("ImageLabel")
+    icon.Size = UDim2.new(0, 26, 0, 26)
+    icon.Position = UDim2.new(0.5, -13, 0.5, -13)
+    icon.BackgroundTransparency = 1
+    icon.Image = "rbxassetid://86571453491468"
+    icon.ImageTransparency = 1
+    icon.ScaleType = Enum.ScaleType.Fit
+    icon.Parent = logoBg
+    
+    task.spawn(function()
+        local ok, loaded = pcall(function() return icon.IsLoaded end)
+        if not ok or not loaded then
+            task.wait(0.5)
+            if icon.Parent and not icon.IsLoaded then
+                icon:Destroy()
+                local e = Instance.new("TextLabel")
+                e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
+                e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.TextTransparency = 1
+                e.Parent = logoBg
+                TweenService:Create(e, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+            end
+        end
+    end)
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0, 200, 0, 18)
+    title.Position = UDim2.new(0, 58, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "540CHEATS"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Font = FONT
+    title.TextSize = 14
+    title.TextTransparency = 1
+    title.Parent = header
+    
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(0, 200, 0, 14)
+    subtitle.Position = UDim2.new(0, 58, 0, 29)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "discord.gg/540shop"
+    subtitle.TextColor3 = DARK.subtext
+    subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.Font = FONT
+    subtitle.TextSize = 10
+    subtitle.TextTransparency = 1
+    subtitle.Parent = header
+    
+    -- Desc
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(1, -40, 0, 20)
+    desc.Position = UDim2.new(0, 20, 0, 68)
+    desc.BackgroundTransparency = 1
+    desc.Text = "> Enter your key from discord.gg/540shop"
+    desc.TextColor3 = DARK.subtext
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Font = FONT
+    desc.TextSize = 11
+    desc.TextTransparency = 1
+    desc.Parent = card
+    
+    -- Input (styled like v24 item)
+    local inputFrame = Instance.new("Frame")
+    inputFrame.Size = UDim2.new(1, -40, 0, 44)
+    inputFrame.Position = UDim2.new(0, 20, 0, 98)
+    inputFrame.BackgroundColor3 = DARK.item
+    inputFrame.BorderSizePixel = 0
+    inputFrame.BackgroundTransparency = 1
+    inputFrame.Parent = card
+    local ifc = Instance.new("UICorner"); ifc.CornerRadius = UDim.new(0, 8); ifc.Parent = inputFrame
+    local ifs = Instance.new("UIStroke"); ifs.Color = DARK.border; ifs.Thickness = 1; ifs.Transparency = 1; ifs.Parent = inputFrame
+    
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -24, 1, 0)
+    input.Position = UDim2.new(0, 12, 0, 0)
+    input.BackgroundTransparency = 1
+    input.Text = ""
+    input.PlaceholderText = "540CHEATS-PREMIUM-XXX"
+    input.TextColor3 = DARK.text
+    input.PlaceholderColor3 = DARK.subtext
+    input.Font = FONT
+    input.TextSize = 12
+    input.TextXAlignment = Enum.TextXAlignment.Left
+    input.ClearTextOnFocus = false
+    input.TextTransparency = 1
+    input.Parent = inputFrame
+    
+    -- Status
+    local status = Instance.new("TextLabel")
+    status.Size = UDim2.new(1, -40, 0, 20)
+    status.Position = UDim2.new(0, 20, 0, 152)
+    status.BackgroundTransparency = 1
+    status.Text = ""
+    status.TextColor3 = DARK.subtext
+    status.TextXAlignment = Enum.TextXAlignment.Left
+    status.Font = FONT
+    status.TextSize = 11
+    status.TextTransparency = 1
+    status.Parent = card
+    
+    -- Button (styled like v24 toggleOn)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -40, 0, 48)
+    btn.Position = UDim2.new(0, 20, 0, 180)
+    btn.BackgroundColor3 = DARK.toggleOn
+    btn.BorderSizePixel = 0
+    btn.Text = "CONFIRM KEY"
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = FONT
+    btn.TextSize = 13
+    btn.TextTransparency = 1
+    btn.BackgroundTransparency = 1
+    btn.Parent = card
+    local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 8); bc.Parent = btn
+    
+    -- Footer
+    local footer = Instance.new("TextLabel")
+    footer.Size = UDim2.new(1, -40, 0, 16)
+    footer.Position = UDim2.new(0, 20, 1, -26)
+    footer.BackgroundTransparency = 1
+    footer.Text = "540CHEATS © discord.gg/540shop"
+    footer.TextColor3 = DARK.subtext
+    footer.TextXAlignment = Enum.TextXAlignment.Center
+    footer.Font = FONT
+    footer.TextSize = 10
+    footer.TextTransparency = 1
+    footer.Parent = card
+    
+    -- Fade in
+    task.spawn(function()
+        TweenService:Create(card, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(bgs, TweenInfo.new(0.3), {Transparency = 0}):Play()
+        TweenService:Create(header, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(hbBottom, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(accentLine, TweenInfo.new(0.3), {BackgroundTransparency = 0.5}):Play()
+        TweenService:Create(logoBg, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(lbgs, TweenInfo.new(0.3), {Transparency = 0.5}):Play()
+        TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(subtitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(desc, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(inputFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(ifs, TweenInfo.new(0.3), {Transparency = 0}):Play()
+        TweenService:Create(input, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.3), {BackgroundTransparency = 0, TextTransparency = 0}):Play()
+        TweenService:Create(footer, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+        if icon.Parent then
+            TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
+        end
+    end)
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = DARK.toggleOn}):Play()
+    end)
+    
+    local function trySubmit()
+        local key = input.Text:gsub("%s+", "")
+        if key == "" then
+            status.Text = "! Please enter a key"
+            status.TextColor3 = Color3.fromRGB(255, 200, 0)
+            return
+        end
+        
+        status.Text = "> Validating..."
+        status.TextColor3 = Color3.fromRGB(255, 200, 0)
+        btn.Text = "CHECKING..."
+        btn.BackgroundColor3 = DARK.toggleOff
+        btn.Active = false
+        
+        task.spawn(function()
+            local valid, reason = validateKey(key)
+            if valid then
+                status.Text = "OK Key valid! Loading..."
+                status.TextColor3 = DARK.success
+                btn.Text = "SUCCESS"
+                btn.BackgroundColor3 = DARK.success
+                saveKey(key)
+                
+                task.wait(0.8)
+                keyGui:Destroy()
+                
+                -- Show loading screen then main script
+                showLoadingScreen(function()
+                    print("[540CHEATS] Loading main script...")
+                    local ok2, err = pcall(runMainScript)
+                    if not ok2 then
+                        warn("[540CHEATS] Script error: " .. tostring(err))
+                    end
+                end)
+            else
+                status.Text = "X " .. (reason or "Invalid key")
+                status.TextColor3 = DARK.danger
+                btn.Text = "TRY AGAIN"
+                btn.BackgroundColor3 = DARK.toggleOn
+                btn.Active = true
+                input.Text = ""
+            end
+        end)
+    end
+    
+    btn.MouseButton1Click:Connect(trySubmit)
+    input.FocusLost:Connect(function(enter)
+        if enter then trySubmit() end
+    end)
+end
+
+-- =====================================================
+-- ★★★ MAIN SCRIPT (v25) ★★★
 -- =====================================================
 local function runMainScript()
     print("[540CHEATS] Starting main script...")
@@ -53,19 +591,14 @@ local function runMainScript()
     local Cam = WS.CurrentCamera
     local LP = Players.LocalPlayer
     local VIM = game:GetService("VirtualInputManager")
-    local TweenService = game:GetService("TweenService")
 
     local Drawing = Drawing or (getgenv and getgenv().Drawing)
     if not Drawing then warn("ต้องใช้ Drawing API"); return end
 
-    local FONT = Enum.Font.RobotoMono
-
     local CFG = {
         Aimbot = true, InstantLock = true, Smoothness = 0.55,
         FOV = 250, AimbotRange = 3000, Prediction = false, PredAmount = 0.15,
-        TargetPart = "Head",
-        ShowFOV = true,
-        AimbotMode = "Hold",
+        TargetPart = "Head", ShowFOV = true, AimbotMode = "Hold",
         Trigger = false, TDelay = 0.05,
         ESP = true, Lines = true, Skeleton = true, Box = true,
         HealthBar = true, HitboxCircle = true, Name = true, Distance = true,
@@ -79,22 +612,7 @@ local function runMainScript()
     local enemies = {}
     local esp = {}
     local gui, main, minimizedLogo, notif
-    local fovCircle
-    local userAvatar
-
-    local DARK = {
-        bg = Color3.fromRGB(12, 12, 15),
-        sidebar = Color3.fromRGB(15, 15, 20),
-        header = Color3.fromRGB(18, 18, 24),
-        headerAccent = Color3.fromRGB(0, 200, 255),
-        item = Color3.fromRGB(25, 25, 30),
-        text = Color3.fromRGB(220, 220, 230),
-        subtext = Color3.fromRGB(120, 120, 135),
-        accent = Color3.fromRGB(0, 200, 255),
-        border = Color3.fromRGB(35, 35, 45),
-        toggleOn = Color3.fromRGB(0, 150, 255),
-        toggleOff = Color3.fromRGB(45, 45, 55),
-    }
+    local fovCircle, userAvatar
 
     -- ENEMY SCAN
     task.spawn(function()
@@ -146,7 +664,6 @@ local function runMainScript()
         pcall(function() p.bg:Remove() end); pcall(function() p.fg:Remove() end)
     end
 
-    -- FOV + CROSSHAIR
     fovCircle = Drawing.new("Circle")
     fovCircle.Color = Color3.fromRGB(0, 220, 255); fovCircle.Thickness = 2; fovCircle.NumSides = 60
     fovCircle.Transparency = 0.6; fovCircle.Filled = false; fovCircle.Visible = true
@@ -212,7 +729,6 @@ local function runMainScript()
         return Vector2.new(sp.X, sp.Y)
     end
 
-    -- AIMBOT
     local function getClosest()
         if not CFG.Aimbot then return nil, nil end
         local cl, ce, sh = nil, nil, math.huge
@@ -245,7 +761,6 @@ local function runMainScript()
         else Cam.CFrame = Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position, tp), (1 - CFG.Smoothness) * 0.3) end
     end
 
-    -- MAIN LOOP
     RunService.RenderStepped:Connect(function()
         if not CFG.ESP then if next(esp) then clearAll() end
         else
@@ -341,16 +856,13 @@ local function runMainScript()
         crossH.From = Vector2.new(cx - 8, cy); crossH.To = Vector2.new(cx + 8, cy); crossH.Visible = true
         crossV.From = Vector2.new(cx, cy - 8); crossV.To = Vector2.new(cx, cy + 8); crossV.Visible = true
         crossDot.Position = Vector2.new(cx, cy); crossDot.Visible = true
-        local shouldAim = false
-        if CFG.AimbotMode == "Hold" then shouldAim = aiming
-        else shouldAim = aimbotToggled end
+        local shouldAim = CFG.AimbotMode == "Hold" and aiming or CFG.AimbotMode == "Toggle" and aimbotToggled
         if shouldAim and CFG.Aimbot then
             local p, e = getClosest()
             if p then aimAt(p, e) end
         end
     end)
 
-    -- TRIGGER
     local lastTrigger = 0
     task.spawn(function()
         while true do
@@ -376,7 +888,6 @@ local function runMainScript()
         end
     end)
 
-    -- ANTI-AFK
     LP.Idled:Connect(function()
         if not CFG.AntiAFK then return end
         pcall(function()
@@ -388,7 +899,7 @@ local function runMainScript()
 
     -- ========== UI ==========
     gui = Instance.new("ScreenGui")
-    gui.Name = "540CHEATS_v24"
+    gui.Name = "540CHEATS_v25"
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -400,12 +911,18 @@ local function runMainScript()
     main.BackgroundColor3 = DARK.bg
     main.BorderSizePixel = 0
     main.Active = true
+    main.BackgroundTransparency = 1
     main.Parent = gui
     local mc = Instance.new("UICorner"); mc.CornerRadius = UDim.new(0, 12); mc.Parent = main
-    local ms = Instance.new("UIStroke"); ms.Color = DARK.border; ms.Thickness = 1; ms.Parent = main
+    local ms = Instance.new("UIStroke"); ms.Color = DARK.border; ms.Thickness = 1; ms.Transparency = 1; ms.Parent = main
+
+    -- Fade in main
+    task.spawn(function()
+        TweenService:Create(main, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(ms, TweenInfo.new(0.4), {Transparency = 0}):Play()
+    end)
 
     local HEADER_H = 54
-
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, HEADER_H)
     header.BackgroundColor3 = DARK.header
@@ -461,14 +978,17 @@ local function runMainScript()
     headerIcon.ScaleType = Enum.ScaleType.Fit
     headerIcon.Parent = logoBg
 
-    task.delay(2, function()
+    task.spawn(function()
         local ok, loaded = pcall(function() return headerIcon.IsLoaded end)
         if not ok or not loaded then
-            headerIcon:Destroy()
-            local e = Instance.new("TextLabel")
-            e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
-            e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
-            e.Parent = logoBg
+            task.wait(0.5)
+            if not headerIcon.IsLoaded then
+                headerIcon:Destroy()
+                local e = Instance.new("TextLabel")
+                e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
+                e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.Parent = logoBg
+            end
         end
     end)
 
@@ -537,7 +1057,6 @@ local function runMainScript()
         print("[540CHEATS] ปิดสคริปต์แล้ว")
     end)
 
-    -- SIDEBAR
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 160, 1, -HEADER_H)
     sidebar.Position = UDim2.new(0, 0, 0, HEADER_H)
@@ -609,7 +1128,6 @@ local function runMainScript()
     pages["Aimbot"].Visible = true
     tabs["Aimbot"]:FindFirstChild("TextLabel").TextColor3 = Color3.new(1, 1, 1)
 
-    -- USER INFO
     local userPanel = Instance.new("Frame")
     userPanel.Size = UDim2.new(1, -20, 0, 60)
     userPanel.Position = UDim2.new(0, 10, 1, -70)
@@ -658,7 +1176,6 @@ local function runMainScript()
         if ok and thumb then userAvatar.Image = thumb end
     end)
 
-    -- HELPERS
     local function makeToggle(parent, label, initial, cb)
         local c = Instance.new("Frame")
         c.Size = UDim2.new(1, 0, 0, 36)
@@ -743,27 +1260,25 @@ local function runMainScript()
         lbl.BackgroundTransparency = 1; lbl.Text = label
         lbl.TextColor3 = DARK.text; lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.Font = FONT; lbl.TextSize = 11; lbl.Parent = cont
-        local btnContainer = Instance.new("Frame")
-        btnContainer.Size = UDim2.new(1, -28, 0, 30)
-        btnContainer.Position = UDim2.new(0, 14, 0, 28)
-        btnContainer.BackgroundTransparency = 1
-        btnContainer.Parent = cont
-        local bl = Instance.new("UIListLayout"); bl.FillDirection = Enum.FillDirection.Horizontal; bl.Padding = UDim.new(0, 6); bl.Parent = btnContainer
+        local bc2 = Instance.new("Frame")
+        bc2.Size = UDim2.new(1, -28, 0, 30)
+        bc2.Position = UDim2.new(0, 14, 0, 28)
+        bc2.BackgroundTransparency = 1
+        bc2.Parent = cont
+        local bl = Instance.new("UIListLayout"); bl.FillDirection = Enum.FillDirection.Horizontal; bl.Padding = UDim.new(0, 6); bl.Parent = bc2
         local buttons = {}
-        local current = initial
         for _, opt in ipairs(options) do
             local b = Instance.new("TextButton")
             b.Size = UDim2.new(0.5, -3, 1, 0)
-            b.BackgroundColor3 = (current == opt) and DARK.accent or DARK.toggleOff
+            b.BackgroundColor3 = (initial == opt) and DARK.accent or DARK.toggleOff
             b.BorderSizePixel = 0
             b.Text = opt
-            b.TextColor3 = (current == opt) and Color3.new(1,1,1) or DARK.text
+            b.TextColor3 = (initial == opt) and Color3.new(1,1,1) or DARK.text
             b.Font = FONT
             b.TextSize = 11
-            b.Parent = btnContainer
-            local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 6); bc.Parent = b
+            b.Parent = bc2
+            local bc3 = Instance.new("UICorner"); bc3.CornerRadius = UDim.new(0, 6); bc3.Parent = b
             b.MouseButton1Click:Connect(function()
-                current = opt
                 for _, bb in ipairs(buttons) do
                     local isActive = (bb.Text == opt)
                     bb.BackgroundColor3 = isActive and DARK.accent or DARK.toggleOff
@@ -775,7 +1290,6 @@ local function runMainScript()
         end
     end
 
-    -- AIMBOT PAGE
     makeToggle(pages["Aimbot"], "Aimbot", CFG.Aimbot, function(v) CFG.Aimbot = v end)
     makeToggle(pages["Aimbot"], "Instant Lock", CFG.InstantLock, function(v) CFG.InstantLock = v end)
     makeToggle(pages["Aimbot"], "Prediction", CFG.Prediction, function(v) CFG.Prediction = v end)
@@ -785,7 +1299,6 @@ local function runMainScript()
     makeSlider(pages["Aimbot"], "Smoothness", 0, 1, CFG.Smoothness, function(v) CFG.Smoothness = v end)
     makeSlider(pages["Aimbot"], "Aimbot Range", 500, 5000, CFG.AimbotRange, function(v) CFG.AimbotRange = v end)
 
-    -- ESP PAGE
     makeToggle(pages["ESP"], "ESP Master", CFG.ESP, function(v) CFG.ESP = v end)
     makeToggle(pages["ESP"], "Lines (Snapline)", CFG.Lines, function(v) CFG.Lines = v end)
     makeToggle(pages["ESP"], "Skeleton", CFG.Skeleton, function(v) CFG.Skeleton = v end)
@@ -795,7 +1308,6 @@ local function runMainScript()
     makeToggle(pages["ESP"], "Show Distance", CFG.Distance, function(v) CFG.Distance = v end)
     makeSlider(pages["ESP"], "Max Distance", 200, 5000, CFG.MaxDistance, function(v) CFG.MaxDistance = v end)
 
-    -- MISC PAGE
     makeToggle(pages["Misc"], "Triggerbot [E]", CFG.Trigger, function(v) CFG.Trigger = v end)
     makeSlider(pages["Misc"], "Trigger Delay", 0.01, 0.5, CFG.TDelay, function(v) CFG.TDelay = v end)
     makeToggle(pages["Misc"], "Anti-AFK", CFG.AntiAFK, function(v) CFG.AntiAFK = v end)
@@ -803,14 +1315,13 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 160)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS v24\n\n  > Right Click = Aimbot (Hold)\n  > Q = Toggle Aimbot (Toggle mode)\n  > E = Triggerbot\n  > X = Toggle UI\n  > F1 = Show UI\n\n  - = Minimize | x = Close"
+    info.Text = "  540CHEATS v25\n\n  > Right Click = Aimbot (Hold)\n  > Q = Toggle Aimbot (Toggle mode)\n  > E = Triggerbot\n  > X = Toggle UI\n  > F1 = Show UI\n\n  - = Minimize | x = Close"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
     info.Parent = pages["Settings"]
     local ic = Instance.new("UICorner"); ic.CornerRadius = UDim.new(0, 8); ic.Parent = info
 
-    -- MINIMIZED LOGO
     minimizedLogo = Instance.new("TextButton")
     minimizedLogo.Size = UDim2.new(0, 50, 0, 50)
     minimizedLogo.Position = UDim2.new(0.5, -25, 0.5, -25)
@@ -831,14 +1342,17 @@ local function runMainScript()
     mlIcon.ScaleType = Enum.ScaleType.Fit
     mlIcon.Parent = minimizedLogo
 
-    task.delay(2, function()
+    task.spawn(function()
         local ok, loaded = pcall(function() return mlIcon.IsLoaded end)
         if not ok or not loaded then
-            mlIcon:Destroy()
-            local e = Instance.new("TextLabel")
-            e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
-            e.Text = "💠"; e.TextSize = 28; e.Font = FONT; e.TextColor3 = DARK.accent
-            e.Parent = minimizedLogo
+            task.wait(0.5)
+            if not mlIcon.IsLoaded then
+                mlIcon:Destroy()
+                local e = Instance.new("TextLabel")
+                e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
+                e.Text = "💠"; e.TextSize = 28; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.Parent = minimizedLogo
+            end
         end
     end)
 
@@ -847,7 +1361,6 @@ local function runMainScript()
         main.Visible = true
     end)
 
-    -- WATERMARK
     local watermark = Instance.new("TextLabel")
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
@@ -862,7 +1375,6 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    -- NOTIFICATION
     notif = Instance.new("TextLabel")
     notif.Size = UDim2.new(0, 300, 0, 32)
     notif.Position = UDim2.new(0.5, -150, 0, -40)
@@ -886,7 +1398,6 @@ local function runMainScript()
         end)
     end
 
-    -- INPUT
     UIS.InputBegan:Connect(function(i, g)
         if i.KeyCode == Enum.KeyCode.Q then
             if CFG.AimbotMode == "Toggle" then
@@ -920,185 +1431,6 @@ local function runMainScript()
 end
 
 -- =====================================================
--- KEY PROMPT UI
--- =====================================================
-local function showKeyPrompt()
-    local LP = game:GetService("Players").LocalPlayer
-    local playerGui = LP:WaitForChild("PlayerGui")
-    
-    local keyGui = Instance.new("ScreenGui")
-    keyGui.Name = "540CHEATS_Key"
-    keyGui.ResetOnSpawn = false
-    keyGui.IgnoreGuiInset = true
-    keyGui.DisplayOrder = 9999
-    keyGui.Parent = playerGui
-    
-    local overlay = Instance.new("Frame")
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.5
-    overlay.BorderSizePixel = 0
-    overlay.Parent = keyGui
-    
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(0, 420, 0, 280)
-    bg.Position = UDim2.new(0.5, -210, 0.5, -140)
-    bg.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    bg.BorderSizePixel = 0
-    bg.Parent = keyGui
-    local bgc = Instance.new("UICorner"); bgc.CornerRadius = UDim.new(0, 14); bgc.Parent = bg
-    local bgs = Instance.new("UIStroke"); bgs.Color = Color3.fromRGB(0, 200, 255); bgs.Thickness = 2; bgs.Parent = bg
-    
-    local hb = Instance.new("Frame")
-    hb.Size = UDim2.new(1, 0, 0, 54)
-    hb.BackgroundColor3 = Color3.fromRGB(0, 40, 65)
-    hb.BorderSizePixel = 0
-    hb.Parent = bg
-    local hbc = Instance.new("UICorner"); hbc.CornerRadius = UDim.new(0, 14); hbc.Parent = hb
-    local hbBot = Instance.new("Frame")
-    hbBot.Size = UDim2.new(1, 0, 0, 12)
-    hbBot.Position = UDim2.new(0, 0, 1, -12)
-    hbBot.BackgroundColor3 = Color3.fromRGB(0, 40, 65)
-    hbBot.BorderSizePixel = 0
-    hbBot.Parent = hb
-    
-    local icon = Instance.new("ImageLabel")
-    icon.Size = UDim2.new(0, 32, 0, 32)
-    icon.Position = UDim2.new(0, 14, 0, 11)
-    icon.BackgroundTransparency = 1
-    icon.Image = "rbxassetid://86571453491468"
-    icon.ScaleType = Enum.ScaleType.Fit
-    icon.Parent = hb
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -60, 0, 32)
-    title.Position = UDim2.new(0, 54, 0, 11)
-    title.BackgroundTransparency = 1
-    title.Text = "540CHEATS — VERIFY KEY"
-    title.TextColor3 = Color3.fromRGB(0, 220, 255)
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Font = Enum.Font.RobotoMono
-    title.TextSize = 15
-    title.Parent = hb
-    
-    local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(1, -40, 0, 20)
-    desc.Position = UDim2.new(0, 20, 0, 68)
-    desc.BackgroundTransparency = 1
-    desc.Text = "> Enter your key from discord.gg/540shop"
-    desc.TextColor3 = Color3.fromRGB(150, 150, 160)
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    desc.Font = Enum.Font.RobotoMono
-    desc.TextSize = 11
-    desc.Parent = bg
-    
-    local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -40, 0, 44)
-    input.Position = UDim2.new(0, 20, 0, 98)
-    input.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    input.BorderSizePixel = 0
-    input.Text = ""
-    input.PlaceholderText = "540CHEATS-PREMIUM-XXX"
-    input.TextColor3 = Color3.new(1, 1, 1)
-    input.PlaceholderColor3 = Color3.fromRGB(100, 100, 115)
-    input.Font = Enum.Font.RobotoMono
-    input.TextSize = 13
-    input.ClearTextOnFocus = false
-    input.Parent = bg
-    local ic = Instance.new("UICorner"); ic.CornerRadius = UDim.new(0, 8); ic.Parent = input
-    local is = Instance.new("UIStroke"); is.Color = Color3.fromRGB(50, 50, 65); is.Thickness = 1; is.Parent = input
-    
-    local status = Instance.new("TextLabel")
-    status.Size = UDim2.new(1, -40, 0, 20)
-    status.Position = UDim2.new(0, 20, 0, 152)
-    status.BackgroundTransparency = 1
-    status.Text = ""
-    status.TextColor3 = Color3.fromRGB(150, 150, 160)
-    status.TextXAlignment = Enum.TextXAlignment.Left
-    status.Font = Enum.Font.RobotoMono
-    status.TextSize = 11
-    status.Parent = bg
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -40, 0, 48)
-    btn.Position = UDim2.new(0, 20, 0, 180)
-    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    btn.BorderSizePixel = 0
-    btn.Text = "CONFIRM KEY"
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.RobotoMono
-    btn.TextSize = 14
-    btn.Parent = bg
-    local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 8); bc.Parent = btn
-    
-    local footer = Instance.new("TextLabel")
-    footer.Size = UDim2.new(1, -40, 0, 16)
-    footer.Position = UDim2.new(0, 20, 1, -26)
-    footer.BackgroundTransparency = 1
-    footer.Text = "540CHEATS © discord.gg/540shop"
-    footer.TextColor3 = Color3.fromRGB(100, 100, 115)
-    footer.TextXAlignment = Enum.TextXAlignment.Center
-    footer.Font = Enum.Font.RobotoMono
-    footer.TextSize = 10
-    footer.Parent = bg
-    
-    local TweenService = game:GetService("TweenService")
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}):Play()
-    end)
-    
-    local function trySubmit()
-        local key = input.Text:gsub("%s+", "")
-        if key == "" then
-            status.Text = "! Please enter a key"
-            status.TextColor3 = Color3.fromRGB(255, 200, 0)
-            return
-        end
-        
-        status.Text = "> Validating..."
-        status.TextColor3 = Color3.fromRGB(255, 200, 0)
-        btn.Text = "CHECKING..."
-        btn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-        btn.Active = false
-        
-        task.spawn(function()
-            local valid, reason = validateKey(key)
-            if valid then
-                status.Text = "OK Key valid! Loading..."
-                status.TextColor3 = Color3.fromRGB(0, 255, 100)
-                btn.Text = "SUCCESS"
-                btn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
-                saveKey(key)
-                
-                task.wait(1)
-                keyGui:Destroy()
-                
-                print("[540CHEATS] Key verified — loading script...")
-                local ok2, err = pcall(runMainScript)
-                if not ok2 then
-                    warn("[540CHEATS] Script error: " .. tostring(err))
-                end
-            else
-                status.Text = "X " .. (reason or "Invalid key")
-                status.TextColor3 = Color3.fromRGB(255, 50, 50)
-                btn.Text = "TRY AGAIN"
-                btn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-                btn.Active = true
-                input.Text = ""
-            end
-        end)
-    end
-    
-    btn.MouseButton1Click:Connect(trySubmit)
-    input.FocusLost:Connect(function(enter)
-        if enter then trySubmit() end
-    end)
-end
-
--- =====================================================
 -- MAIN ENTRY
 -- =====================================================
 print("[540CHEATS] Initializing...")
@@ -1109,8 +1441,10 @@ if savedKey then
     local valid = validateKey(savedKey)
     if valid then
         print("[540CHEATS] OK Saved key valid")
-        local ok, err = pcall(runMainScript)
-        if not ok then warn("[540CHEATS] Script error: " .. tostring(err)) end
+        showLoadingScreen(function()
+            local ok, err = pcall(runMainScript)
+            if not ok then warn("[540CHEATS] Script error: " .. tostring(err)) end
+        end)
     else
         print("[540CHEATS] X Saved key invalid — prompting")
         showKeyPrompt()
