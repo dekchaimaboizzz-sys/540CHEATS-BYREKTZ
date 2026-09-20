@@ -257,7 +257,8 @@ local function showLoadingScreen(callback)
             }):Play()
             
             -- Animate percentage
-            local startPct = tonumber((percentLabel.Text:gsub("%%",""))) or 0
+            local startText = percentLabel.Text:gsub("%%","")
+            local startPct = tonumber(startText) or 0
             local endPct = step.pct
             local duration = step.wait
             local elapsed = 0
