@@ -612,7 +612,6 @@ end
         -- Call main
         if callback then callback() end
     end)
-end
 
 -- =====================================================
 -- ★★★ KEY PROMPT (v24 theme) ★★★
