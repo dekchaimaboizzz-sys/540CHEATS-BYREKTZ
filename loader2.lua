@@ -1,250 +1,186 @@
 -- =====================================================
--- 540CHEATS | Anime Dice Edition v3
+-- 540CHEATS | Anime Dice v4 - Silent Auto
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
 
 local FONT = Enum.Font.RobotoMono
 local DARK = {
-    bg = Color3.fromRGB(12, 12, 15),
-    sidebar = Color3.fromRGB(15, 15, 20),
-    header = Color3.fromRGB(18, 18, 24),
-    headerAccent = Color3.fromRGB(0, 200, 255),
-    item = Color3.fromRGB(25, 25, 30),
-    text = Color3.fromRGB(220, 220, 230),
-    subtext = Color3.fromRGB(120, 120, 135),
-    accent = Color3.fromRGB(0, 200, 255),
-    border = Color3.fromRGB(35, 35, 45),
-    toggleOn = Color3.fromRGB(0, 150, 255),
-    toggleOff = Color3.fromRGB(45, 45, 55),
-    success = Color3.fromRGB(0, 200, 80),
+    bg = Color3.fromRGB(12, 12, 15), sidebar = Color3.fromRGB(15, 15, 20),
+    header = Color3.fromRGB(18, 18, 24), headerAccent = Color3.fromRGB(0, 200, 255),
+    item = Color3.fromRGB(25, 25, 30), text = Color3.fromRGB(220, 220, 230),
+    subtext = Color3.fromRGB(120, 120, 135), accent = Color3.fromRGB(0, 200, 255),
+    border = Color3.fromRGB(35, 35, 45), toggleOn = Color3.fromRGB(0, 150, 255),
+    toggleOff = Color3.fromRGB(45, 45, 55), success = Color3.fromRGB(0, 200, 80),
     danger = Color3.fromRGB(200, 50, 60),
 }
 
 local TweenService = game:GetService("TweenService")
 
-local function safeTween(instance, duration, props)
-    if not instance or not instance.Parent then return end
-    pcall(function()
-        TweenService:Create(instance, TweenInfo.new(duration), props):Play()
-    end)
+local function safeTween(i, d, p)
+    if not i or not i.Parent then return end
+    pcall(function() TweenService:Create(i, TweenInfo.new(d), p):Play() end)
 end
 
--- =====================================================
--- KEY VALIDATION
--- =====================================================
 local function validateKey(userKey)
     if not userKey or userKey == "" then return false, "ไม่มี key" end
-    local ok, response = pcall(function()
-        return game:HttpGet(KEY_URL, true)
-    end)
+    local ok, response = pcall(function() return game:HttpGet(KEY_URL, true) end)
     if not ok then return false, "เชื่อมต่อไม่สำเร็จ" end
-    local cleanInput = tostring(userKey):gsub("%s+", "")
+    local clean = tostring(userKey):gsub("%s+", "")
     for line in response:gmatch("[^\r\n]+") do
-        if line:gsub("%s+", "") == cleanInput then return true end
+        if line:gsub("%s+", "") == clean then return true end
     end
     return false, "Key ไม่ถูกต้อง"
 end
 
 -- =====================================================
--- ★★★ MAIN SCRIPT — ANIME DICE v3 ★★★
+-- ★★★ MAIN — ANIME DICE v4 SILENT ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v3 starting...")
+    print("[540CHEATS] Anime Dice v4 Silent starting...")
 
     local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
     local UIS = game:GetService("UserInputService")
     local RS = game:GetService("ReplicatedStorage")
-    local WS = workspace
     local LP = Players.LocalPlayer
-    local VIM = game:GetService("VirtualInputManager")
     local PG = LP:WaitForChild("PlayerGui")
 
-    -- ===== REMOTE PATHS =====
-    local Network = RS:FindFirstChild("Network")
-    local SetAutoRoll, RollDice
-    if Network then
-        pcall(function()
-            if Network.RollService then
-                SetAutoRoll = Network.RollService.RE.SetAutoRoll
-                RollDice = Network.RollService.RF.RollDice
-            end
-        end)
-    end
-    print("[540CHEATS] SetAutoRoll:", SetAutoRoll ~= nil, "| RollDice:", RollDice ~= nil)
-
-    -- ===== ★★★ CLICK FUNCTION — ใช้ getconnections ★★★ =====
-    local function clickButton(btn)
+    -- ===== SILENT CLICK — ใช้ getconnections เท่านั้น =====
+    local function silentClick(btn)
         if not btn then return false end
-        
-        local success = false
-        
-        -- วิธี 1: getconnections (ชัวร์สุด)
+        local fired = false
         if getconnections then
+            -- MouseButton1Click
             pcall(function()
                 for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
                     if conn.Function then
-                        task.spawn(conn.Function)
-                        success = true
+                        pcall(function() task.spawn(conn.Function) end)
+                        fired = true
                     end
                 end
             end)
-            if success then return true end
-            
+            if fired then return true end
+            -- Activated
             pcall(function()
                 for _, conn in ipairs(getconnections(btn.Activated)) do
                     if conn.Function then
-                        task.spawn(conn.Function)
-                        success = true
+                        pcall(function() task.spawn(conn.Function) end)
+                        fired = true
                     end
                 end
             end)
-            if success then return true end
         end
-        
-        -- วิธี 2: SendMouseButtonEvent ที่ตำแหน่งปุ่ม
-        if not success and btn.Visible and VIM then
-            pcall(function()
-                local pos = btn.AbsolutePosition + btn.AbsoluteSize / 2
-                -- ปรับ offset topbar
-                local y = pos.Y + 36
-                VIM:SendMouseButtonEvent(pos.X, y, 0, true, game, 0)
-                task.wait(0.05)
-                VIM:SendMouseButtonEvent(pos.X, y, 0, false, game, 0)
-                success = true
-            end)
-        end
-        
-        return success
+        return fired
     end
 
-    -- ===== FIND BUTTON =====
-    local function findButton(name)
-        local found = nil
-        local fallback = nil
+    -- ===== FIND BUTTON (ในเกม) =====
+    local function findGameButton(name)
+        -- ค้นหาใน PlayerGui ก่อน
         for _, obj in ipairs(PG:GetDescendants()) do
             if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
-                if obj.Visible and obj.AbsoluteSize.X > 0 then
-                    found = obj
-                    break
-                elseif not fallback then
-                    fallback = obj
-                end
+                if obj.Visible and obj.AbsoluteSize.X > 0 then return obj end
             end
         end
-        return found or fallback
+        -- fallback
+        for _, obj in ipairs(PG:GetDescendants()) do
+            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
+                return obj
+            end
+        end
+        return nil
     end
 
-    -- ===== CFG =====
+    -- ===== REMOTE (fallback) =====
+    local Network = RS:FindFirstChild("Network")
+    local SetAutoRoll, RollDice
+    if Network and Network:FindFirstChild("RollService") then
+        pcall(function()
+            SetAutoRoll = Network.RollService.RE.SetAutoRoll
+            RollDice = Network.RollService.RF.RollDice
+        end)
+    end
+
     local CFG = {
-        AutoRoll = false,
-        RollDelay = 0.15,
-        AutoSkip = false,
-        AutoKeep = false,
-        AutoUpgrade = false,
-        UpgradeDelay = 1,
-        AutoSell = false,
-        AutoRebirth = false,
-        AutoRollCount = 0,
-        UseMethod = "Button",  -- "Button" / "Remote"
+        AutoRoll = false, RollDelay = 0.15,
+        AutoSkip = false, AutoKeep = false,
+        AutoUpgrade = false, UpgradeDelay = 1,
+        AutoSell = false, AutoRebirth = false,
+        RollCount = 0,
     }
 
-    -- =====================================================
-    -- ★ AUTO ROLL
-    -- =====================================================
+    -- ★ AUTO ROLL — ใช้ getconnections (ไม่โชว์การคลิก)
     task.spawn(function()
         while true do
             task.wait(CFG.RollDelay)
             if CFG.AutoRoll then
-                local rolled = false
-                
-                if CFG.UseMethod == "Button" then
-                    local rollBtn = findButton("Roll")
-                    if rollBtn then
-                        rolled = clickButton(rollBtn)
+                -- ลองใช้ปุ่ม AutoRoll ของเกมก่อน (เปิดทิ้งไว้)
+                local autoBtn = findGameButton("AutoRoll")
+                if autoBtn then
+                    if silentClick(autoBtn) then
+                        CFG.RollCount = CFG.RollCount + 1
                     end
-                end
-                
-                if not rolled and CFG.UseMethod == "Remote" and RollDice then
-                    pcall(function()
-                        RollDice:InvokeServer()
-                        rolled = true
-                    end)
-                end
-                
-                if rolled then
-                    CFG.AutoRollCount = CFG.AutoRollCount + 1
+                else
+                    -- fallback: ใช้ remote
+                    if RollDice then
+                        pcall(function()
+                            RollDice:InvokeServer()
+                            CFG.RollCount = CFG.RollCount + 1
+                        end)
+                    end
                 end
             end
         end
     end)
 
-    -- =====================================================
-    -- ★ AUTO SKIP / KEEP
-    -- =====================================================
+    -- Auto Skip / Keep
     task.spawn(function()
         while true do
             task.wait(0.2)
             if CFG.AutoSkip then
-                local skipBtn = findButton("Skip")
-                if skipBtn and skipBtn.Visible then
-                    clickButton(skipBtn)
-                end
+                local b = findGameButton("Skip")
+                if b and b.Visible then silentClick(b) end
             end
             if CFG.AutoKeep then
-                local keepBtn = findButton("Keep")
-                if keepBtn and keepBtn.Visible then
-                    clickButton(keepBtn)
-                end
+                local b = findGameButton("Keep")
+                if b and b.Visible then silentClick(b) end
             end
         end
     end)
 
-    -- =====================================================
-    -- ★ AUTO UPGRADE
-    -- =====================================================
+    -- Auto Upgrade
     task.spawn(function()
         while true do
             task.wait(CFG.UpgradeDelay)
             if CFG.AutoUpgrade then
-                local upgBtn = findButton("Upgrades")
-                if upgBtn then
-                    clickButton(upgBtn)
+                local b = findGameButton("Upgrades")
+                if b then
+                    silentClick(b)
                     task.wait(0.5)
-                    local homeBtn = findButton("Home")
-                    if homeBtn then clickButton(homeBtn) end
+                    local h = findGameButton("Home")
+                    if h then silentClick(h) end
                 end
             end
         end
     end)
 
-    -- =====================================================
-    -- ★ AUTO SELL
-    -- =====================================================
+    -- Auto Sell
     task.spawn(function()
         while true do
             task.wait(1)
             if CFG.AutoSell then
-                local sellBtn = findButton("Sell")
-                if sellBtn and sellBtn.Visible then
-                    clickButton(sellBtn)
-                end
+                local b = findGameButton("Sell")
+                if b and b.Visible then silentClick(b) end
             end
         end
     end)
 
-    -- =====================================================
-    -- ★ AUTO REBIRTH
-    -- =====================================================
+    -- Auto Rebirth
     task.spawn(function()
         while true do
             task.wait(3)
             if CFG.AutoRebirth then
-                local rbBtn = findButton("Rebirth")
-                if rbBtn then
-                    clickButton(rbBtn)
-                end
+                local b = findGameButton("Rebirth")
+                if b then silentClick(b) end
             end
         end
     end)
@@ -342,7 +278,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice"
+    headerTitle.Text = "540CHEATS | Anime Dice v4"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -353,7 +289,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "discord.gg/540shop"
+    headerSub.Text = "silent mode"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -513,7 +449,6 @@ local function runMainScript()
         end)
     end)
 
-    -- UI Helpers
     local function makeToggle(parent, label, initial, cb)
         local c = Instance.new("Frame")
         c.Size = UDim2.new(1, 0, 0, 36)
@@ -585,32 +520,27 @@ local function runMainScript()
         end)
     end
 
-    -- Main Tab
-    makeToggle(pages["Main"], "Auto Roll", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
+    makeToggle(pages["Main"], "Auto Roll (Silent)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
     makeSlider(pages["Main"], "Roll Delay", 0.05, 1, CFG.RollDelay, function(v) CFG.RollDelay = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
 
-    -- Upgrades Tab
     makeToggle(pages["Upgrades"], "Auto Upgrade", CFG.AutoUpgrade, function(v) CFG.AutoUpgrade = v end)
     makeSlider(pages["Upgrades"], "Upgrade Delay", 0.5, 5, CFG.UpgradeDelay, function(v) CFG.UpgradeDelay = v end)
 
-    -- Sell Tab
     makeToggle(pages["Sell"], "Auto Sell", CFG.AutoSell, function(v) CFG.AutoSell = v end)
 
-    -- Settings Tab
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 200)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v3\n\n  ✓ Auto Roll (getconnections)\n  ✓ Auto Skip\n  ✓ Auto Keep\n  ✓ Auto Upgrade\n  ✓ Auto Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v4\n\n  ✓ Silent Auto Roll (getconnections)\n  ✓ ไม่แสดงการคลิกให้เห็น\n  ✓ Auto Skip / Keep / Upgrade / Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
     info.Parent = pages["Settings"]
     local ic = Instance.new("UICorner"); ic.CornerRadius = UDim.new(0, 8); ic.Parent = info
 
-    -- Minimized Logo
     minimizedLogo = Instance.new("TextButton")
     minimizedLogo.Size = UDim2.new(0, 50, 0, 50)
     minimizedLogo.Position = UDim2.new(0.5, -25, 0.5, -25)
@@ -647,12 +577,11 @@ local function runMainScript()
         main.Visible = true
     end)
 
-    -- Watermark
     local watermark = Instance.new("TextLabel")
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v3"
+    watermark.Text = "540CHEATS | Anime Dice v4"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -662,22 +591,21 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v3 loaded successfully")
+    print("[540CHEATS] Anime Dice v4 loaded")
 end
 
 -- =====================================================
--- ★★★ LOADING SCREEN ★★★
+-- LOADING + KEY (ใช้ของเดิม)
 -- =====================================================
 local function showLoadingScreen(callback)
     local ok, loadGui = pcall(function()
         local LP = game:GetService("Players").LocalPlayer
-        local playerGui = LP:WaitForChild("PlayerGui")
         local gui = Instance.new("ScreenGui")
         gui.Name = "540CHEATS_Loading"
         gui.ResetOnSpawn = false
         gui.IgnoreGuiInset = true
         gui.DisplayOrder = 9999
-        gui.Parent = playerGui
+        gui.Parent = LP:WaitForChild("PlayerGui")
         return gui
     end)
     if not ok or not loadGui then
@@ -685,169 +613,133 @@ local function showLoadingScreen(callback)
         return
     end
 
-    local isDestroyed = false
-    local card, overlay, title, subtitle, barBg, barFill
-    local statusText, percentLabel, footer, logoIcon
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.3
+    overlay.BorderSizePixel = 0
+    overlay.Parent = loadGui
 
-    local setup = pcall(function()
-        overlay = Instance.new("Frame")
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 0.3
-        overlay.BorderSizePixel = 0
-        overlay.Parent = loadGui
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(0, 420, 0, 220)
+    card.Position = UDim2.new(0.5, -210, 0.5, -110)
+    card.BackgroundColor3 = DARK.bg
+    card.BorderSizePixel = 0
+    card.Parent = loadGui
+    local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 14); cc.Parent = card
+    local cs = Instance.new("UIStroke"); cs.Color = DARK.accent; cs.Thickness = 2; cs.Parent = card
 
-        card = Instance.new("Frame")
-        card.Size = UDim2.new(0, 420, 0, 220)
-        card.Position = UDim2.new(0.5, -210, 0.5, -110)
-        card.BackgroundColor3 = DARK.bg
-        card.BorderSizePixel = 0
-        card.Parent = loadGui
-        local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 14); cc.Parent = card
-        local cs = Instance.new("UIStroke"); cs.Color = DARK.accent; cs.Thickness = 2; cs.Parent = card
+    local logoIcon = Instance.new("ImageLabel")
+    logoIcon.Size = UDim2.new(0, 60, 0, 60)
+    logoIcon.Position = UDim2.new(0.5, -30, 0, 20)
+    logoIcon.BackgroundTransparency = 1
+    logoIcon.Image = "rbxassetid://86571453491468"
+    logoIcon.ScaleType = Enum.ScaleType.Fit
+    logoIcon.Parent = card
 
-        logoIcon = Instance.new("ImageLabel")
-        logoIcon.Size = UDim2.new(0, 60, 0, 60)
-        logoIcon.Position = UDim2.new(0.5, -30, 0, 20)
-        logoIcon.BackgroundTransparency = 1
-        logoIcon.Image = "rbxassetid://86571453491468"
-        logoIcon.ScaleType = Enum.ScaleType.Fit
-        logoIcon.Parent = card
-
-        task.spawn(function()
-            task.wait(0.5)
-            if isDestroyed or not logoIcon or not logoIcon.Parent then return end
-            if not logoIcon.IsLoaded then
-                pcall(function() logoIcon:Destroy() end)
-                local e = Instance.new("TextLabel")
-                e.Size = UDim2.new(1, 0, 0, 60); e.Position = UDim2.new(0, 0, 0, 20)
-                e.BackgroundTransparency = 1
-                e.Text = "💠"; e.TextSize = 40; e.Font = FONT; e.TextColor3 = DARK.accent
-                e.Parent = card
-            end
-        end)
-
-        title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 24)
-        title.Position = UDim2.new(0, 0, 0, 90)
-        title.BackgroundTransparency = 1
-        title.Text = "540CHEATS | Anime Dice"
-        title.TextColor3 = Color3.new(1, 1, 1)
-        title.TextXAlignment = Enum.TextXAlignment.Center
-        title.Font = FONT
-        title.TextSize = 20
-        title.Parent = card
-
-        subtitle = Instance.new("TextLabel")
-        subtitle.Size = UDim2.new(1, 0, 0, 16)
-        subtitle.Position = UDim2.new(0, 0, 0, 115)
-        subtitle.BackgroundTransparency = 1
-        subtitle.Text = "discord.gg/540shop"
-        subtitle.TextColor3 = DARK.subtext
-        subtitle.TextXAlignment = Enum.TextXAlignment.Center
-        subtitle.Font = FONT
-        subtitle.TextSize = 11
-        subtitle.Parent = card
-
-        barBg = Instance.new("Frame")
-        barBg.Size = UDim2.new(1, -60, 0, 10)
-        barBg.Position = UDim2.new(0, 30, 0, 150)
-        barBg.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-        barBg.BorderSizePixel = 0
-        barBg.Parent = card
-        local bbc = Instance.new("UICorner"); bbc.CornerRadius = UDim.new(1, 0); bbc.Parent = barBg
-
-        barFill = Instance.new("Frame")
-        barFill.Size = UDim2.new(0, 0, 1, 0)
-        barFill.BackgroundColor3 = DARK.accent
-        barFill.BorderSizePixel = 0
-        barFill.Parent = barBg
-        local bfc = Instance.new("UICorner"); bfc.CornerRadius = UDim.new(1, 0); bfc.Parent = barFill
-
-        statusText = Instance.new("TextLabel")
-        statusText.Size = UDim2.new(1, -60, 0, 16)
-        statusText.Position = UDim2.new(0, 30, 0, 168)
-        statusText.BackgroundTransparency = 1
-        statusText.Text = "> Loading..."
-        statusText.TextColor3 = DARK.subtext
-        statusText.TextXAlignment = Enum.TextXAlignment.Left
-        statusText.Font = FONT
-        statusText.TextSize = 11
-        statusText.Parent = card
-
-        percentLabel = Instance.new("TextLabel")
-        percentLabel.Size = UDim2.new(0, 60, 0, 16)
-        percentLabel.Position = UDim2.new(1, -90, 0, 168)
-        percentLabel.BackgroundTransparency = 1
-        percentLabel.Text = "0%"
-        percentLabel.TextColor3 = DARK.accent
-        percentLabel.TextXAlignment = Enum.TextXAlignment.Right
-        percentLabel.Font = FONT
-        percentLabel.TextSize = 11
-        percentLabel.Parent = card
-
-        footer = Instance.new("TextLabel")
-        footer.Size = UDim2.new(1, -60, 0, 14)
-        footer.Position = UDim2.new(0, 30, 1, -24)
-        footer.BackgroundTransparency = 1
-        footer.Text = "540CHEATS © discord.gg/540shop"
-        footer.TextColor3 = DARK.subtext
-        footer.TextXAlignment = Enum.TextXAlignment.Left
-        footer.Font = FONT
-        footer.TextSize = 9
-        footer.Parent = card
+    task.spawn(function()
+        task.wait(0.5)
+        if logoIcon.Parent and not logoIcon.IsLoaded then
+            logoIcon:Destroy()
+            local e = Instance.new("TextLabel")
+            e.Size = UDim2.new(1, 0, 0, 60); e.Position = UDim2.new(0, 0, 0, 20)
+            e.BackgroundTransparency = 1
+            e.Text = "💠"; e.TextSize = 40; e.Font = FONT; e.TextColor3 = DARK.accent
+            e.Parent = card
+        end
     end)
 
-    if not setup then
-        pcall(function() loadGui:Destroy() end)
-        if callback then callback() end
-        return
-    end
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 24)
+    title.Position = UDim2.new(0, 0, 0, 90)
+    title.BackgroundTransparency = 1
+    title.Text = "540CHEATS | Anime Dice v4"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.Font = FONT
+    title.TextSize = 20
+    title.Parent = card
+
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, 0, 0, 16)
+    subtitle.Position = UDim2.new(0, 0, 0, 115)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "discord.gg/540shop"
+    subtitle.TextColor3 = DARK.subtext
+    subtitle.TextXAlignment = Enum.TextXAlignment.Center
+    subtitle.Font = FONT
+    subtitle.TextSize = 11
+    subtitle.Parent = card
+
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -60, 0, 10)
+    barBg.Position = UDim2.new(0, 30, 0, 150)
+    barBg.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    barBg.BorderSizePixel = 0
+    barBg.Parent = card
+    local bbc = Instance.new("UICorner"); bbc.CornerRadius = UDim.new(1, 0); bbc.Parent = barBg
+
+    local barFill = Instance.new("Frame")
+    barFill.Size = UDim2.new(0, 0, 1, 0)
+    barFill.BackgroundColor3 = DARK.accent
+    barFill.BorderSizePixel = 0
+    barFill.Parent = barBg
+    local bfc = Instance.new("UICorner"); bfc.CornerRadius = UDim.new(1, 0); bfc.Parent = barFill
+
+    local statusText = Instance.new("TextLabel")
+    statusText.Size = UDim2.new(1, -60, 0, 16)
+    statusText.Position = UDim2.new(0, 30, 0, 168)
+    statusText.BackgroundTransparency = 1
+    statusText.Text = "> Loading..."
+    statusText.TextColor3 = DARK.subtext
+    statusText.TextXAlignment = Enum.TextXAlignment.Left
+    statusText.Font = FONT
+    statusText.TextSize = 11
+    statusText.Parent = card
+
+    local percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(0, 60, 0, 16)
+    percentLabel.Position = UDim2.new(1, -90, 0, 168)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Text = "0%"
+    percentLabel.TextColor3 = DARK.accent
+    percentLabel.TextXAlignment = Enum.TextXAlignment.Right
+    percentLabel.Font = FONT
+    percentLabel.TextSize = 11
+    percentLabel.Parent = card
 
     task.spawn(function()
         task.wait(0.3)
-        if isDestroyed then return end
-
         local steps = {
-            { pct = 25, text = "> Loading Anime Dice", wait = 0.4 },
-            { pct = 50, text = "> Preparing UI", wait = 0.4 },
-            { pct = 75, text = "> Connecting Remotes", wait = 0.4 },
+            { pct = 25, text = "> Loading", wait = 0.4 },
+            { pct = 50, text = "> Preparing", wait = 0.4 },
+            { pct = 75, text = "> Connecting", wait = 0.4 },
             { pct = 100, text = "> Ready!", wait = 0.5 },
         }
-
         local currentPct = 0
         for _, step in ipairs(steps) do
-            if isDestroyed then return end
-            if statusText and statusText.Parent then statusText.Text = step.text end
+            statusText.Text = step.text
             local targetPct = step.pct
             local startPct = currentPct
             local duration = step.wait
             local frames = math.max(1, math.floor(duration * 60))
-
             for i = 1, frames do
-                if isDestroyed then return end
                 task.wait(duration / frames)
                 local p = i / frames
                 local curr = math.floor(startPct + (targetPct - startPct) * p)
-                if percentLabel and percentLabel.Parent then percentLabel.Text = curr .. "%" end
-                if barFill and barFill.Parent then barFill.Size = UDim2.new(curr / 100, 0, 1, 0) end
+                percentLabel.Text = curr .. "%"
+                barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
             end
-
-            if percentLabel and percentLabel.Parent then percentLabel.Text = targetPct .. "%" end
-            if barFill and barFill.Parent then barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0) end
+            percentLabel.Text = targetPct .. "%"
+            barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
             currentPct = targetPct
         end
-
         task.wait(0.3)
-        isDestroyed = true
         pcall(function() loadGui:Destroy() end)
         if callback then callback() end
     end)
 end
 
--- =====================================================
--- ★★★ KEY PROMPT ★★★
--- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
     local playerGui = LP:WaitForChild("PlayerGui")
@@ -864,23 +756,17 @@ local function showKeyPrompt()
     keyGui.IgnoreGuiInset = true
     keyGui.DisplayOrder = 99999
     keyGui.Enabled = true
-
-    local parentOk = pcall(function() keyGui.Parent = playerGui end)
-    if not parentOk or not keyGui.Parent then
+    pcall(function() keyGui.Parent = playerGui end)
+    if not keyGui.Parent then
         pcall(function() keyGui.Parent = game:GetService("CoreGui") end)
     end
-
-    if not keyGui.Parent then
-        warn("[540CHEATS] ไม่สามารถสร้าง Key GUI ได้")
-        return
-    end
+    if not keyGui.Parent then return end
 
     local overlay = Instance.new("Frame")
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     overlay.BackgroundTransparency = 0.4
     overlay.BorderSizePixel = 0
-    overlay.ZIndex = 1
     overlay.Parent = keyGui
 
     local card = Instance.new("Frame")
@@ -888,7 +774,6 @@ local function showKeyPrompt()
     card.Position = UDim2.new(0.5, -210, 0.5, -140)
     card.BackgroundColor3 = DARK.bg
     card.BorderSizePixel = 0
-    card.ZIndex = 10
     card.Parent = keyGui
     local bgc = Instance.new("UICorner"); bgc.CornerRadius = UDim.new(0, 14); bgc.Parent = card
     local bgs = Instance.new("UIStroke"); bgs.Color = DARK.accent; bgs.Thickness = 2; bgs.Parent = card
@@ -897,7 +782,6 @@ local function showKeyPrompt()
     header.Size = UDim2.new(1, 0, 0, 54)
     header.BackgroundColor3 = DARK.header
     header.BorderSizePixel = 0
-    header.ZIndex = 11
     header.Parent = card
     local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
 
@@ -906,7 +790,6 @@ local function showKeyPrompt()
     hbBottom.Position = UDim2.new(0, 0, 1, -12)
     hbBottom.BackgroundColor3 = DARK.header
     hbBottom.BorderSizePixel = 0
-    hbBottom.ZIndex = 11
     hbBottom.Parent = header
 
     local logoBg = Instance.new("Frame")
@@ -914,7 +797,6 @@ local function showKeyPrompt()
     logoBg.Position = UDim2.new(0, 14, 0, 10)
     logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     logoBg.BorderSizePixel = 0
-    logoBg.ZIndex = 12
     logoBg.Parent = header
     local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
     local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 0.5; lbgs.Parent = logoBg
@@ -925,7 +807,6 @@ local function showKeyPrompt()
     icon.BackgroundTransparency = 1
     icon.Image = "rbxassetid://86571453491468"
     icon.ScaleType = Enum.ScaleType.Fit
-    icon.ZIndex = 13
     icon.Parent = logoBg
 
     task.spawn(function()
@@ -935,7 +816,6 @@ local function showKeyPrompt()
             local e = Instance.new("TextLabel")
             e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
             e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
-            e.ZIndex = 13
             e.Parent = logoBg
         end
     end)
@@ -949,7 +829,6 @@ local function showKeyPrompt()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Font = FONT
     title.TextSize = 14
-    title.ZIndex = 12
     title.Parent = header
 
     local subtitle = Instance.new("TextLabel")
@@ -961,7 +840,6 @@ local function showKeyPrompt()
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Font = FONT
     subtitle.TextSize = 10
-    subtitle.ZIndex = 12
     subtitle.Parent = header
 
     local desc = Instance.new("TextLabel")
@@ -973,7 +851,6 @@ local function showKeyPrompt()
     desc.TextXAlignment = Enum.TextXAlignment.Left
     desc.Font = FONT
     desc.TextSize = 11
-    desc.ZIndex = 11
     desc.Parent = card
 
     local inputFrame = Instance.new("Frame")
@@ -981,7 +858,6 @@ local function showKeyPrompt()
     inputFrame.Position = UDim2.new(0, 20, 0, 98)
     inputFrame.BackgroundColor3 = DARK.item
     inputFrame.BorderSizePixel = 0
-    inputFrame.ZIndex = 11
     inputFrame.Parent = card
     local ifc = Instance.new("UICorner"); ifc.CornerRadius = UDim.new(0, 8); ifc.Parent = inputFrame
     local ifs = Instance.new("UIStroke"); ifs.Color = DARK.border; ifs.Thickness = 1; ifs.Parent = inputFrame
@@ -998,12 +874,10 @@ local function showKeyPrompt()
     input.TextSize = 12
     input.TextXAlignment = Enum.TextXAlignment.Left
     input.ClearTextOnFocus = false
-    input.ZIndex = 12
     input.Parent = inputFrame
 
     local realKey = ""
     local isUpdating = false
-
     input:GetPropertyChangedSignal("Text"):Connect(function()
         if isUpdating then return end
         isUpdating = true
@@ -1017,8 +891,8 @@ local function showKeyPrompt()
         elseif currentLen < realLen then
             realKey = realKey:sub(1, currentLen)
         else
-            local expectedMask = string.rep("*", realLen)
-            if current ~= expectedMask and current ~= "" then
+            local expMask = string.rep("*", realLen)
+            if current ~= expMask and current ~= "" then
                 realKey = current:gsub("%*", "")
             end
         end
@@ -1035,7 +909,6 @@ local function showKeyPrompt()
     status.TextXAlignment = Enum.TextXAlignment.Left
     status.Font = FONT
     status.TextSize = 11
-    status.ZIndex = 11
     status.Parent = card
 
     local btn = Instance.new("TextButton")
@@ -1047,7 +920,6 @@ local function showKeyPrompt()
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = FONT
     btn.TextSize = 13
-    btn.ZIndex = 11
     btn.Parent = card
     local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 8); bc.Parent = btn
 
@@ -1060,15 +932,7 @@ local function showKeyPrompt()
     footer.TextXAlignment = Enum.TextXAlignment.Center
     footer.Font = FONT
     footer.TextSize = 10
-    footer.ZIndex = 11
     footer.Parent = card
-
-    btn.MouseEnter:Connect(function()
-        safeTween(btn, 0.15, {BackgroundColor3 = Color3.fromRGB(0, 180, 255)})
-    end)
-    btn.MouseLeave:Connect(function()
-        safeTween(btn, 0.15, {BackgroundColor3 = DARK.toggleOn})
-    end)
 
     local function trySubmit()
         local key = realKey:gsub("%s+", "")
@@ -1082,7 +946,6 @@ local function showKeyPrompt()
         btn.Text = "CHECKING..."
         btn.BackgroundColor3 = DARK.toggleOff
         btn.Active = false
-
         task.spawn(function()
             local valid, reason = validateKey(key)
             if valid then
@@ -1093,11 +956,8 @@ local function showKeyPrompt()
                 task.wait(2)
                 pcall(function() keyGui:Destroy() end)
                 showLoadingScreen(function()
-                    print("[540CHEATS] Loading main script...")
                     local ok2, err = pcall(runMainScript)
-                    if not ok2 then
-                        warn("[540CHEATS] Script error: " .. tostring(err))
-                    end
+                    if not ok2 then warn("[540CHEATS] Error: " .. tostring(err)) end
                 end)
             else
                 status.Text = "X " .. (reason or "Invalid key")
@@ -1120,6 +980,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing...")
-print("[540CHEATS] Anime Dice v3")
+print("[540CHEATS] Initializing Anime Dice v4...")
 showKeyPrompt()
