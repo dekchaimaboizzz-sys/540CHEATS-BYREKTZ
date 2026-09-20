@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice Edition v2
+-- 540CHEATS | Anime Dice Edition v3
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -47,10 +47,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN SCRIPT — ANIME DICE ★★★
+-- ★★★ MAIN SCRIPT — ANIME DICE v3 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v2 starting...")
+    print("[540CHEATS] Anime Dice v3 starting...")
 
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
@@ -58,70 +58,60 @@ local function runMainScript()
     local RS = game:GetService("ReplicatedStorage")
     local WS = workspace
     local LP = Players.LocalPlayer
-
-    local VIM = nil
-    pcall(function() VIM = game:GetService("VirtualInputManager") end)
+    local VIM = game:GetService("VirtualInputManager")
+    local PG = LP:WaitForChild("PlayerGui")
 
     -- ===== REMOTE PATHS =====
-    local Network = RS:WaitForChild("Network", 10)
-    local SetAutoRoll = nil
-    local RollDice = nil
-    
+    local Network = RS:FindFirstChild("Network")
+    local SetAutoRoll, RollDice
     if Network then
         pcall(function()
-            SetAutoRoll = Network.RollService.RE.SetAutoRoll
-            RollDice = Network.RollService.RF.RollDice
+            if Network.RollService then
+                SetAutoRoll = Network.RollService.RE.SetAutoRoll
+                RollDice = Network.RollService.RF.RollDice
+            end
         end)
     end
+    print("[540CHEATS] SetAutoRoll:", SetAutoRoll ~= nil, "| RollDice:", RollDice ~= nil)
 
-    print("[540CHEATS] SetAutoRoll found:", SetAutoRoll ~= nil)
-    print("[540CHEATS] RollDice found:", RollDice ~= nil)
-
-    -- ===== HELPER: หาปุ่มด้วยชื่อ =====
-    local function findButton(name)
-        local PG = LP:WaitForChild("PlayerGui")
-        local found = nil
-        for _, obj in ipairs(PG:GetDescendants()) do
-            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
-                if obj.Visible then
-                    found = obj
-                    break
-                elseif not found then
-                    found = obj
-                end
-            end
-        end
-        return found
-    end
-
-    -- ===== HELPER: กดปุ่มด้วย Activated =====
+    -- ===== ★★★ CLICK FUNCTION — ใช้ getconnections ★★★ =====
     local function clickButton(btn)
         if not btn then return false end
+        
         local success = false
         
-        -- วิธี 1: Activated event
-        pcall(function()
-            btn:Activate()
-            success = true
-        end)
-        
-        -- วิธี 2: Fire MouseButton1Click
-        if not success then
+        -- วิธี 1: getconnections (ชัวร์สุด)
+        if getconnections then
             pcall(function()
                 for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-                    conn:Fire()
+                    if conn.Function then
+                        task.spawn(conn.Function)
+                        success = true
+                    end
                 end
-                success = true
             end)
+            if success then return true end
+            
+            pcall(function()
+                for _, conn in ipairs(getconnections(btn.Activated)) do
+                    if conn.Function then
+                        task.spawn(conn.Function)
+                        success = true
+                    end
+                end
+            end)
+            if success then return true end
         end
         
-        -- วิธี 3: Simulate click ที่ตำแหน่งปุ่ม
-        if not success and VIM then
+        -- วิธี 2: SendMouseButtonEvent ที่ตำแหน่งปุ่ม
+        if not success and btn.Visible and VIM then
             pcall(function()
                 local pos = btn.AbsolutePosition + btn.AbsoluteSize / 2
-                VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+                -- ปรับ offset topbar
+                local y = pos.Y + 36
+                VIM:SendMouseButtonEvent(pos.X, y, 0, true, game, 0)
                 task.wait(0.05)
-                VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+                VIM:SendMouseButtonEvent(pos.X, y, 0, false, game, 0)
                 success = true
             end)
         end
@@ -129,26 +119,36 @@ local function runMainScript()
         return success
     end
 
+    -- ===== FIND BUTTON =====
+    local function findButton(name)
+        local found = nil
+        local fallback = nil
+        for _, obj in ipairs(PG:GetDescendants()) do
+            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
+                if obj.Visible and obj.AbsoluteSize.X > 0 then
+                    found = obj
+                    break
+                elseif not fallback then
+                    fallback = obj
+                end
+            end
+        end
+        return found or fallback
+    end
+
     -- ===== CFG =====
     local CFG = {
         AutoRoll = false,
-        RollDelay = 0.1,
-        AutoRollMethod = "Remote",  -- "Remote" หรือ "Button"
-        
-        AutoUpgrade = false,
-        UpgradeDelay = 1,
-        
-        AutoSell = false,
-        
-        AutoRebirth = false,
-        
+        RollDelay = 0.15,
         AutoSkip = false,
         AutoKeep = false,
+        AutoUpgrade = false,
+        UpgradeDelay = 1,
+        AutoSell = false,
+        AutoRebirth = false,
+        AutoRollCount = 0,
+        UseMethod = "Button",  -- "Button" / "Remote"
     }
-
-    local gui, main, minimizedLogo, notif
-    local userAvatar
-    local rollCount = 0
 
     -- =====================================================
     -- ★ AUTO ROLL
@@ -157,36 +157,24 @@ local function runMainScript()
         while true do
             task.wait(CFG.RollDelay)
             if CFG.AutoRoll then
-                local success = false
+                local rolled = false
                 
-                if CFG.AutoRollMethod == "Remote" and RollDice then
-                    -- วิธี 1: ใช้ RemoteFunction
-                    pcall(function()
-                        RollDice:InvokeServer()
-                        success = true
-                    end)
-                elseif CFG.AutoRollMethod == "Button" then
-                    -- วิธี 2: กดปุ่ม Roll
+                if CFG.UseMethod == "Button" then
                     local rollBtn = findButton("Roll")
                     if rollBtn then
-                        success = clickButton(rollBtn)
+                        rolled = clickButton(rollBtn)
                     end
                 end
                 
-                -- Fallback: ถ้าวิธีที่เลือกไม่สำเร็จ ลองวิธีอื่น
-                if not success then
-                    if SetAutoRoll then
-                        pcall(function()
-                            SetAutoRoll:FireServer(true)
-                            task.wait(0.5)
-                            SetAutoRoll:FireServer(false)
-                            success = true
-                        end)
-                    end
+                if not rolled and CFG.UseMethod == "Remote" and RollDice then
+                    pcall(function()
+                        RollDice:InvokeServer()
+                        rolled = true
+                    end)
                 end
                 
-                if success then
-                    rollCount = rollCount + 1
+                if rolled then
+                    CFG.AutoRollCount = CFG.AutoRollCount + 1
                 end
             end
         end
@@ -197,7 +185,7 @@ local function runMainScript()
     -- =====================================================
     task.spawn(function()
         while true do
-            task.wait(0.3)
+            task.wait(0.2)
             if CFG.AutoSkip then
                 local skipBtn = findButton("Skip")
                 if skipBtn and skipBtn.Visible then
@@ -220,11 +208,10 @@ local function runMainScript()
         while true do
             task.wait(CFG.UpgradeDelay)
             if CFG.AutoUpgrade then
-                local upgradeBtn = findButton("Upgrades")
-                if upgradeBtn then
-                    clickButton(upgradeBtn)
-                    task.wait(0.3)
-                    -- กลับ Home
+                local upgBtn = findButton("Upgrades")
+                if upgBtn then
+                    clickButton(upgBtn)
+                    task.wait(0.5)
                     local homeBtn = findButton("Home")
                     if homeBtn then clickButton(homeBtn) end
                 end
@@ -254,23 +241,25 @@ local function runMainScript()
         while true do
             task.wait(3)
             if CFG.AutoRebirth then
-                local rebirthBtn = findButton("Rebirth")
-                if rebirthBtn then
-                    clickButton(rebirthBtn)
+                local rbBtn = findButton("Rebirth")
+                if rbBtn then
+                    clickButton(rbBtn)
                 end
             end
         end
     end)
 
     -- =====================================================
-    -- UI — VALEN HUB STYLE
+    -- UI
     -- =====================================================
+    local gui, main, minimizedLogo, userAvatar
+
     gui = Instance.new("ScreenGui")
     gui.Name = "540CHEATS_AnimeDice"
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = LP:WaitForChild("PlayerGui")
+    gui.Parent = PG
 
     main = Instance.new("Frame")
     main.Size = UDim2.new(0, 640, 0, 420)
@@ -402,7 +391,6 @@ local function runMainScript()
     local cbc = Instance.new("UICorner"); cbc.CornerRadius = UDim.new(0, 6); cbc.Parent = closeBtn
     closeBtn.MouseButton1Click:Connect(function()
         pcall(function() gui:Destroy() end)
-        print("[540CHEATS] ปิดสคริปต์แล้ว")
     end)
 
     local sidebar = Instance.new("Frame")
@@ -598,13 +586,7 @@ local function runMainScript()
     end
 
     -- Main Tab
-    makeToggle(pages["Main"], "Auto Roll", CFG.AutoRoll, function(v) 
-        CFG.AutoRoll = v 
-        -- ถ้าเปิด auto roll ในเกมด้วย
-        if SetAutoRoll then
-            pcall(function() SetAutoRoll:FireServer(v) end)
-        end
-    end)
+    makeToggle(pages["Main"], "Auto Roll", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
     makeSlider(pages["Main"], "Roll Delay", 0.05, 1, CFG.RollDelay, function(v) CFG.RollDelay = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
@@ -621,7 +603,7 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 200)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v2\n\n  ✓ Auto Roll (ใช้ Remote)\n  ✓ Auto Skip\n  ✓ Auto Keep\n  ✓ Auto Upgrade\n  ✓ Auto Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v3\n\n  ✓ Auto Roll (getconnections)\n  ✓ Auto Skip\n  ✓ Auto Keep\n  ✓ Auto Upgrade\n  ✓ Auto Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -670,7 +652,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v2"
+    watermark.Text = "540CHEATS | Anime Dice v3"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -680,7 +662,7 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v2 loaded successfully")
+    print("[540CHEATS] Anime Dice v3 loaded successfully")
 end
 
 -- =====================================================
@@ -867,8 +849,6 @@ end
 -- ★★★ KEY PROMPT ★★★
 -- =====================================================
 local function showKeyPrompt()
-    print("[540CHEATS] Showing key prompt...")
-
     local LP = game:GetService("Players").LocalPlayer
     local playerGui = LP:WaitForChild("PlayerGui")
 
@@ -1027,11 +1007,9 @@ local function showKeyPrompt()
     input:GetPropertyChangedSignal("Text"):Connect(function()
         if isUpdating then return end
         isUpdating = true
-
         local current = input.Text
         local currentLen = #current
         local realLen = #realKey
-
         if currentLen > realLen then
             local added = current:sub(realLen + 1)
             added = added:gsub("%*", "")
@@ -1044,7 +1022,6 @@ local function showKeyPrompt()
                 realKey = current:gsub("%*", "")
             end
         end
-
         input.Text = string.rep("*", #realKey)
         isUpdating = false
     end)
@@ -1100,7 +1077,6 @@ local function showKeyPrompt()
             status.TextColor3 = Color3.fromRGB(255, 200, 0)
             return
         end
-
         status.Text = "> Validating..."
         status.TextColor3 = Color3.fromRGB(255, 200, 0)
         btn.Text = "CHECKING..."
@@ -1114,10 +1090,8 @@ local function showKeyPrompt()
                 status.TextColor3 = DARK.success
                 btn.Text = "SUCCESS"
                 btn.BackgroundColor3 = DARK.success
-
                 task.wait(2)
                 pcall(function() keyGui:Destroy() end)
-
                 showLoadingScreen(function()
                     print("[540CHEATS] Loading main script...")
                     local ok2, err = pcall(runMainScript)
@@ -1141,14 +1115,11 @@ local function showKeyPrompt()
     input.FocusLost:Connect(function(enter)
         if enter then trySubmit() end
     end)
-
-    print("[540CHEATS] Key prompt ready")
 end
 
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
 print("[540CHEATS] Initializing...")
-print("[540CHEATS] Anime Dice v2")
-
+print("[540CHEATS] Anime Dice v3")
 showKeyPrompt()
