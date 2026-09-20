@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice v4 - Silent Auto
+-- 540CHEATS | Anime Dice v5 - Fixed Activated
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -16,7 +16,6 @@ local DARK = {
 }
 
 local TweenService = game:GetService("TweenService")
-
 local function safeTween(i, d, p)
     if not i or not i.Parent then return end
     pcall(function() TweenService:Create(i, TweenInfo.new(d), p):Play() end)
@@ -34,10 +33,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN — ANIME DICE v4 SILENT ★★★
+-- ★★★ MAIN — ANIME DICE v5 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v4 Silent starting...")
+    print("[540CHEATS] Anime Dice v5 starting...")
 
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -45,43 +44,54 @@ local function runMainScript()
     local LP = Players.LocalPlayer
     local PG = LP:WaitForChild("PlayerGui")
 
-    -- ===== SILENT CLICK — ใช้ getconnections เท่านั้น =====
-    local function silentClick(btn)
-        if not btn then return false end
-        local fired = false
+    -- ===== SILENT ACTIVATE — ใช้ Activated connections =====
+    local function silentActivate(btn)
+        if not btn then return false, "nil button" end
+        
+        local fired = 0
+        
+        -- วิธี 1: Activated (สำคัญสุด)
         if getconnections then
-            -- MouseButton1Click
             pcall(function()
-                for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-                    if conn.Function then
+                for _, conn in ipairs(getconnections(btn.Activated)) do
+                    if conn.Enabled and conn.Function then
                         pcall(function() task.spawn(conn.Function) end)
-                        fired = true
+                        fired = fired + 1
                     end
                 end
             end)
-            if fired then return true end
-            -- Activated
+            
+            -- วิธี 2: MouseButton1Click (เผื่อไว้)
             pcall(function()
-                for _, conn in ipairs(getconnections(btn.Activated)) do
-                    if conn.Function then
+                for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+                    if conn.Enabled and conn.Function then
                         pcall(function() task.spawn(conn.Function) end)
-                        fired = true
+                        fired = fired + 1
+                    end
+                end
+            end)
+            
+            -- วิธี 3: MouseButton1Down
+            pcall(function()
+                for _, conn in ipairs(getconnections(btn.MouseButton1Down)) do
+                    if conn.Enabled and conn.Function then
+                        pcall(function() task.spawn(conn.Function) end)
+                        fired = fired + 1
                     end
                 end
             end)
         end
-        return fired
+        
+        return fired > 0, fired
     end
 
-    -- ===== FIND BUTTON (ในเกม) =====
-    local function findGameButton(name)
-        -- ค้นหาใน PlayerGui ก่อน
+    -- ===== FIND BUTTON =====
+    local function findButton(name)
         for _, obj in ipairs(PG:GetDescendants()) do
             if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
                 if obj.Visible and obj.AbsoluteSize.X > 0 then return obj end
             end
         end
-        -- fallback
         for _, obj in ipairs(PG:GetDescendants()) do
             if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
                 return obj
@@ -90,36 +100,34 @@ local function runMainScript()
         return nil
     end
 
-    -- ===== REMOTE (fallback) =====
+    -- ===== REMOTE =====
     local Network = RS:FindFirstChild("Network")
-    local SetAutoRoll, RollDice
-    if Network and Network:FindFirstChild("RollService") then
-        pcall(function()
-            SetAutoRoll = Network.RollService.RE.SetAutoRoll
-            RollDice = Network.RollService.RF.RollDice
-        end)
-    end
+    local RollService = Network and Network:FindFirstChild("RollService")
+    local RollDice = RollService and RollService:FindFirstChild("RF") and RollService.RF:FindFirstChild("RollDice")
+    local SetAutoRoll = RollService and RollService:FindFirstChild("RE") and RollService.RE:FindFirstChild("SetAutoRoll")
+    
+    print("[540CHEATS] RollDice:", RollDice ~= nil, "| SetAutoRoll:", SetAutoRoll ~= nil)
 
     local CFG = {
-        AutoRoll = false, RollDelay = 0.15,
+        AutoRoll = false, RollDelay = 0.1,
         AutoSkip = false, AutoKeep = false,
         AutoUpgrade = false, UpgradeDelay = 1,
         AutoSell = false, AutoRebirth = false,
-        RollCount = 0,
+        RollCount = 0, FailCount = 0,
     }
 
-    -- ★ AUTO ROLL — ใช้ getconnections (ไม่โชว์การคลิก)
+    -- ★ AUTO ROLL — ใช้ Activated
     task.spawn(function()
         while true do
             task.wait(CFG.RollDelay)
             if CFG.AutoRoll then
-                -- ลองใช้ปุ่ม AutoRoll ของเกมก่อน (เปิดทิ้งไว้)
-                local autoBtn = findGameButton("AutoRoll")
-                if autoBtn then
-                    if silentClick(autoBtn) then
-                        CFG.RollCount = CFG.RollCount + 1
-                    end
+                local rollBtn = findButton("Roll")
+                local ok, count = silentActivate(rollBtn)
+                
+                if ok then
+                    CFG.RollCount = CFG.RollCount + 1
                 else
+                    CFG.FailCount = CFG.FailCount + 1
                     -- fallback: ใช้ remote
                     if RollDice then
                         pcall(function()
@@ -137,12 +145,12 @@ local function runMainScript()
         while true do
             task.wait(0.2)
             if CFG.AutoSkip then
-                local b = findGameButton("Skip")
-                if b and b.Visible then silentClick(b) end
+                local b = findButton("Skip")
+                if b and b.Visible then silentActivate(b) end
             end
             if CFG.AutoKeep then
-                local b = findGameButton("Keep")
-                if b and b.Visible then silentClick(b) end
+                local b = findButton("Keep")
+                if b and b.Visible then silentActivate(b) end
             end
         end
     end)
@@ -152,12 +160,12 @@ local function runMainScript()
         while true do
             task.wait(CFG.UpgradeDelay)
             if CFG.AutoUpgrade then
-                local b = findGameButton("Upgrades")
+                local b = findButton("Upgrades")
                 if b then
-                    silentClick(b)
+                    silentActivate(b)
                     task.wait(0.5)
-                    local h = findGameButton("Home")
-                    if h then silentClick(h) end
+                    local h = findButton("Home")
+                    if h then silentActivate(h) end
                 end
             end
         end
@@ -168,8 +176,8 @@ local function runMainScript()
         while true do
             task.wait(1)
             if CFG.AutoSell then
-                local b = findGameButton("Sell")
-                if b and b.Visible then silentClick(b) end
+                local b = findButton("Sell")
+                if b and b.Visible then silentActivate(b) end
             end
         end
     end)
@@ -179,8 +187,8 @@ local function runMainScript()
         while true do
             task.wait(3)
             if CFG.AutoRebirth then
-                local b = findGameButton("Rebirth")
-                if b then silentClick(b) end
+                local b = findButton("Rebirth")
+                if b then silentActivate(b) end
             end
         end
     end)
@@ -278,7 +286,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice v4"
+    headerTitle.Text = "540CHEATS | Anime Dice v5"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -289,7 +297,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "silent mode"
+    headerSub.Text = "silent + activated"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -400,7 +408,6 @@ local function runMainScript()
     pages["Main"].Visible = true
     tabs["Main"]:FindFirstChild("TextLabel").TextColor3 = Color3.new(1, 1, 1)
 
-    -- User Panel
     local userPanel = Instance.new("Frame")
     userPanel.Size = UDim2.new(1, -20, 0, 60)
     userPanel.Position = UDim2.new(0, 10, 1, -70)
@@ -534,7 +541,7 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 200)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v4\n\n  ✓ Silent Auto Roll (getconnections)\n  ✓ ไม่แสดงการคลิกให้เห็น\n  ✓ Auto Skip / Keep / Upgrade / Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v5\n\n  ✓ Silent Auto Roll (Activated)\n  ✓ ไม่แสดง AUTO button\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -581,7 +588,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v4"
+    watermark.Text = "540CHEATS | Anime Dice v5"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -591,11 +598,11 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v4 loaded")
+    print("[540CHEATS] Anime Dice v5 loaded")
 end
 
 -- =====================================================
--- LOADING + KEY (ใช้ของเดิม)
+-- LOADING SCREEN
 -- =====================================================
 local function showLoadingScreen(callback)
     local ok, loadGui = pcall(function()
@@ -653,7 +660,7 @@ local function showLoadingScreen(callback)
     title.Size = UDim2.new(1, 0, 0, 24)
     title.Position = UDim2.new(0, 0, 0, 90)
     title.BackgroundTransparency = 1
-    title.Text = "540CHEATS | Anime Dice v4"
+    title.Text = "540CHEATS | Anime Dice v5"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Font = FONT
@@ -716,23 +723,22 @@ local function showLoadingScreen(callback)
             { pct = 75, text = "> Connecting", wait = 0.4 },
             { pct = 100, text = "> Ready!", wait = 0.5 },
         }
-        local currentPct = 0
+        local cur = 0
         for _, step in ipairs(steps) do
             statusText.Text = step.text
-            local targetPct = step.pct
-            local startPct = currentPct
-            local duration = step.wait
-            local frames = math.max(1, math.floor(duration * 60))
+            local tgt = step.pct
+            local dur = step.wait
+            local frames = math.max(1, math.floor(dur * 60))
             for i = 1, frames do
-                task.wait(duration / frames)
+                task.wait(dur / frames)
                 local p = i / frames
-                local curr = math.floor(startPct + (targetPct - startPct) * p)
-                percentLabel.Text = curr .. "%"
-                barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
+                local c = math.floor(cur + (tgt - cur) * p)
+                percentLabel.Text = c .. "%"
+                barFill.Size = UDim2.new(c / 100, 0, 1, 0)
             end
-            percentLabel.Text = targetPct .. "%"
-            barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
-            currentPct = targetPct
+            percentLabel.Text = tgt .. "%"
+            barFill.Size = UDim2.new(tgt / 100, 0, 1, 0)
+            cur = tgt
         end
         task.wait(0.3)
         pcall(function() loadGui:Destroy() end)
@@ -740,14 +746,15 @@ local function showLoadingScreen(callback)
     end)
 end
 
+-- =====================================================
+-- KEY PROMPT
+-- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
-    local playerGui = LP:WaitForChild("PlayerGui")
+    local PG = LP:WaitForChild("PlayerGui")
 
-    for _, g in ipairs(playerGui:GetChildren()) do
-        if g.Name == "540CHEATS_Key" then
-            pcall(function() g:Destroy() end)
-        end
+    for _, g in ipairs(PG:GetChildren()) do
+        if g.Name == "540CHEATS_Key" then pcall(function() g:Destroy() end) end
     end
 
     local keyGui = Instance.new("ScreenGui")
@@ -756,10 +763,8 @@ local function showKeyPrompt()
     keyGui.IgnoreGuiInset = true
     keyGui.DisplayOrder = 99999
     keyGui.Enabled = true
-    pcall(function() keyGui.Parent = playerGui end)
-    if not keyGui.Parent then
-        pcall(function() keyGui.Parent = game:GetService("CoreGui") end)
-    end
+    pcall(function() keyGui.Parent = PG end)
+    if not keyGui.Parent then pcall(function() keyGui.Parent = game:GetService("CoreGui") end) end
     if not keyGui.Parent then return end
 
     local overlay = Instance.new("Frame")
@@ -881,20 +886,17 @@ local function showKeyPrompt()
     input:GetPropertyChangedSignal("Text"):Connect(function()
         if isUpdating then return end
         isUpdating = true
-        local current = input.Text
-        local currentLen = #current
-        local realLen = #realKey
-        if currentLen > realLen then
-            local added = current:sub(realLen + 1)
-            added = added:gsub("%*", "")
-            realKey = realKey .. added
-        elseif currentLen < realLen then
-            realKey = realKey:sub(1, currentLen)
+        local cur = input.Text
+        local cl = #cur
+        local rl = #realKey
+        if cl > rl then
+            local add = cur:sub(rl + 1):gsub("%*", "")
+            realKey = realKey .. add
+        elseif cl < rl then
+            realKey = realKey:sub(1, cl)
         else
-            local expMask = string.rep("*", realLen)
-            if current ~= expMask and current ~= "" then
-                realKey = current:gsub("%*", "")
-            end
+            local exp = string.rep("*", rl)
+            if cur ~= exp and cur ~= "" then realKey = cur:gsub("%*", "") end
         end
         input.Text = string.rep("*", #realKey)
         isUpdating = false
@@ -980,5 +982,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing Anime Dice v4...")
+print("[540CHEATS] Initializing Anime Dice v5...")
 showKeyPrompt()
