@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice v5 - Fixed Activated
+-- 540CHEATS | Anime Dice v6
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -16,11 +16,15 @@ local DARK = {
 }
 
 local TweenService = game:GetService("TweenService")
+
 local function safeTween(i, d, p)
     if not i or not i.Parent then return end
     pcall(function() TweenService:Create(i, TweenInfo.new(d), p):Play() end)
 end
 
+-- =====================================================
+-- KEY VALIDATION
+-- =====================================================
 local function validateKey(userKey)
     if not userKey or userKey == "" then return false, "ไม่มี key" end
     local ok, response = pcall(function() return game:HttpGet(KEY_URL, true) end)
@@ -33,10 +37,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN — ANIME DICE v5 ★★★
+-- ★★★ MAIN SCRIPT — ANIME DICE v6 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v5 starting...")
+    print("[540CHEATS] Anime Dice v6 starting...")
 
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -44,48 +48,81 @@ local function runMainScript()
     local LP = Players.LocalPlayer
     local PG = LP:WaitForChild("PlayerGui")
 
-    -- ===== SILENT ACTIVATE — ใช้ Activated connections =====
-    local function silentActivate(btn)
-        if not btn then return false, "nil button" end
-        
-        local fired = 0
-        
-        -- วิธี 1: Activated (สำคัญสุด)
+    -- ===== REMOTE =====
+    local Network = RS:WaitForChild("Network", 10)
+    local SetAutoRoll, RollDice
+    if Network and Network:FindFirstChild("RollService") then
+        local RSvc = Network.RollService
+        if RSvc:FindFirstChild("RE") then
+            SetAutoRoll = RSvc.RE:FindFirstChild("SetAutoRoll")
+        end
+        if RSvc:FindFirstChild("RF") then
+            RollDice = RSvc.RF:FindFirstChild("RollDice")
+        end
+    end
+    print("[540CHEATS] SetAutoRoll:", SetAutoRoll ~= nil, "| RollDice:", RollDice ~= nil)
+
+    local CFG = {
+        AutoRoll = false, RollDelay = 0.1,
+        AutoSkip = false, AutoKeep = false,
+        AutoUpgrade = false, UpgradeDelay = 1,
+        AutoSell = false, AutoRebirth = false,
+        RollCount = 0,
+    }
+
+    -- ===== NATIVE AUTO ROLL (ใช้ remote ตรงๆ) =====
+    local lastAutoRollState = nil
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            if CFG.AutoRoll ~= lastAutoRollState then
+                lastAutoRollState = CFG.AutoRoll
+                if SetAutoRoll then
+                    pcall(function()
+                        SetAutoRoll:FireServer(CFG.AutoRoll)
+                        print("[540CHEATS] SetAutoRoll →", CFG.AutoRoll)
+                    end)
+                end
+            end
+        end
+    end)
+
+    -- ===== FALLBACK: RollDice invoke =====
+    task.spawn(function()
+        while true do
+            task.wait(CFG.RollDelay)
+            if CFG.AutoRoll and RollDice and not SetAutoRoll then
+                pcall(function()
+                    RollDice:InvokeServer()
+                    CFG.RollCount = CFG.RollCount + 1
+                end)
+            end
+        end
+    end)
+
+    -- ===== SILENT CLICK (Activated + MouseButton1Click) =====
+    local function silentClick(btn)
+        if not btn then return false end
+        local fired = false
         if getconnections then
             pcall(function()
                 for _, conn in ipairs(getconnections(btn.Activated)) do
                     if conn.Enabled and conn.Function then
                         pcall(function() task.spawn(conn.Function) end)
-                        fired = fired + 1
+                        fired = true
                     end
                 end
-            end)
-            
-            -- วิธี 2: MouseButton1Click (เผื่อไว้)
-            pcall(function()
                 for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
                     if conn.Enabled and conn.Function then
                         pcall(function() task.spawn(conn.Function) end)
-                        fired = fired + 1
-                    end
-                end
-            end)
-            
-            -- วิธี 3: MouseButton1Down
-            pcall(function()
-                for _, conn in ipairs(getconnections(btn.MouseButton1Down)) do
-                    if conn.Enabled and conn.Function then
-                        pcall(function() task.spawn(conn.Function) end)
-                        fired = fired + 1
+                        fired = true
                     end
                 end
             end)
         end
-        
-        return fired > 0, fired
+        return fired
     end
 
-    -- ===== FIND BUTTON =====
     local function findButton(name)
         for _, obj in ipairs(PG:GetDescendants()) do
             if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
@@ -100,95 +137,51 @@ local function runMainScript()
         return nil
     end
 
-    -- ===== REMOTE =====
-    local Network = RS:FindFirstChild("Network")
-    local RollService = Network and Network:FindFirstChild("RollService")
-    local RollDice = RollService and RollService:FindFirstChild("RF") and RollService.RF:FindFirstChild("RollDice")
-    local SetAutoRoll = RollService and RollService:FindFirstChild("RE") and RollService.RE:FindFirstChild("SetAutoRoll")
-    
-    print("[540CHEATS] RollDice:", RollDice ~= nil, "| SetAutoRoll:", SetAutoRoll ~= nil)
-
-    local CFG = {
-        AutoRoll = false, RollDelay = 0.1,
-        AutoSkip = false, AutoKeep = false,
-        AutoUpgrade = false, UpgradeDelay = 1,
-        AutoSell = false, AutoRebirth = false,
-        RollCount = 0, FailCount = 0,
-    }
-
-    -- ★ AUTO ROLL — ใช้ Activated
-    task.spawn(function()
-        while true do
-            task.wait(CFG.RollDelay)
-            if CFG.AutoRoll then
-                local rollBtn = findButton("Roll")
-                local ok, count = silentActivate(rollBtn)
-                
-                if ok then
-                    CFG.RollCount = CFG.RollCount + 1
-                else
-                    CFG.FailCount = CFG.FailCount + 1
-                    -- fallback: ใช้ remote
-                    if RollDice then
-                        pcall(function()
-                            RollDice:InvokeServer()
-                            CFG.RollCount = CFG.RollCount + 1
-                        end)
-                    end
-                end
-            end
-        end
-    end)
-
-    -- Auto Skip / Keep
     task.spawn(function()
         while true do
             task.wait(0.2)
             if CFG.AutoSkip then
                 local b = findButton("Skip")
-                if b and b.Visible then silentActivate(b) end
+                if b and b.Visible then silentClick(b) end
             end
             if CFG.AutoKeep then
                 local b = findButton("Keep")
-                if b and b.Visible then silentActivate(b) end
+                if b and b.Visible then silentClick(b) end
             end
         end
     end)
 
-    -- Auto Upgrade
     task.spawn(function()
         while true do
             task.wait(CFG.UpgradeDelay)
             if CFG.AutoUpgrade then
                 local b = findButton("Upgrades")
                 if b then
-                    silentActivate(b)
+                    silentClick(b)
                     task.wait(0.5)
                     local h = findButton("Home")
-                    if h then silentActivate(h) end
+                    if h then silentClick(h) end
                 end
             end
         end
     end)
 
-    -- Auto Sell
     task.spawn(function()
         while true do
             task.wait(1)
             if CFG.AutoSell then
                 local b = findButton("Sell")
-                if b and b.Visible then silentActivate(b) end
+                if b and b.Visible then silentClick(b) end
             end
         end
     end)
 
-    -- Auto Rebirth
     task.spawn(function()
         while true do
             task.wait(3)
             if CFG.AutoRebirth then
                 local b = findButton("Rebirth")
-                if b then silentActivate(b) end
+                if b then silentClick(b) end
             end
         end
     end)
@@ -286,7 +279,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice v5"
+    headerTitle.Text = "540CHEATS | Anime Dice v6"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -297,7 +290,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "silent + activated"
+    headerSub.Text = "native auto-roll"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -334,6 +327,7 @@ local function runMainScript()
     closeBtn.Parent = btnContainer
     local cbc = Instance.new("UICorner"); cbc.CornerRadius = UDim.new(0, 6); cbc.Parent = closeBtn
     closeBtn.MouseButton1Click:Connect(function()
+        if SetAutoRoll then pcall(function() SetAutoRoll:FireServer(false) end) end
         pcall(function() gui:Destroy() end)
     end)
 
@@ -527,8 +521,7 @@ local function runMainScript()
         end)
     end
 
-    makeToggle(pages["Main"], "Auto Roll (Silent)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
-    makeSlider(pages["Main"], "Roll Delay", 0.05, 1, CFG.RollDelay, function(v) CFG.RollDelay = v end)
+    makeToggle(pages["Main"], "Auto Roll (Native)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
@@ -541,7 +534,7 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 200)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v5\n\n  ✓ Silent Auto Roll (Activated)\n  ✓ ไม่แสดง AUTO button\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v6\n\n  ✓ Auto Roll (Native Remote)\n  ✓ SetAutoRoll:FireServer()\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -588,7 +581,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v5"
+    watermark.Text = "540CHEATS | Anime Dice v6"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -598,11 +591,11 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v5 loaded")
+    print("[540CHEATS] Anime Dice v6 loaded")
 end
 
 -- =====================================================
--- LOADING SCREEN
+-- ★★★ LOADING SCREEN ★★★
 -- =====================================================
 local function showLoadingScreen(callback)
     local ok, loadGui = pcall(function()
@@ -660,7 +653,7 @@ local function showLoadingScreen(callback)
     title.Size = UDim2.new(1, 0, 0, 24)
     title.Position = UDim2.new(0, 0, 0, 90)
     title.BackgroundTransparency = 1
-    title.Text = "540CHEATS | Anime Dice v5"
+    title.Text = "540CHEATS | Anime Dice v6"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Font = FONT
@@ -747,7 +740,7 @@ local function showLoadingScreen(callback)
 end
 
 -- =====================================================
--- KEY PROMPT
+-- ★★★ KEY PROMPT ★★★
 -- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
@@ -982,5 +975,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing Anime Dice v5...")
+print("[540CHEATS] Initializing Anime Dice v6...")
 showKeyPrompt()
