@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS v25 | No Save Key Edition
+-- 540CHEATS v25 | Safe + No Save + Masked
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -1034,9 +1034,7 @@ local function showLoadingScreen(callback)
         local currentPct = 0
         for _, step in ipairs(steps) do
             if isDestroyed then return end
-            if statusText and statusText.Parent then
-                statusText.Text = step.text
-            end
+            if statusText and statusText.Parent then statusText.Text = step.text end
             local targetPct = step.pct
             local startPct = currentPct
             local duration = step.wait
@@ -1047,50 +1045,63 @@ local function showLoadingScreen(callback)
                 task.wait(duration / frames)
                 local p = i / frames
                 local curr = math.floor(startPct + (targetPct - startPct) * p)
-                if percentLabel and percentLabel.Parent then
-                    percentLabel.Text = curr .. "%"
-                end
-                if barFill and barFill.Parent then
-                    barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
-                end
+                if percentLabel and percentLabel.Parent then percentLabel.Text = curr .. "%" end
+                if barFill and barFill.Parent then barFill.Size = UDim2.new(curr / 100, 0, 1, 0) end
             end
 
-            if percentLabel and percentLabel.Parent then
-                percentLabel.Text = targetPct .. "%"
-            end
-            if barFill and barFill.Parent then
-                barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
-            end
+            if percentLabel and percentLabel.Parent then percentLabel.Text = targetPct .. "%" end
+            if barFill and barFill.Parent then barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0) end
             currentPct = targetPct
         end
 
         task.wait(0.3)
         isDestroyed = true
         pcall(function() loadGui:Destroy() end)
-
         if callback then callback() end
     end)
 end
 
 -- =====================================================
--- ★★★ KEY PROMPT - MASKED + NO SAVE ★★★
+-- ★★★ KEY PROMPT — SAFE + MASKED ★★★
 -- =====================================================
 local function showKeyPrompt()
+    print("[540CHEATS] Attempting to show key prompt...")
+
     local LP = game:GetService("Players").LocalPlayer
     local playerGui = LP:WaitForChild("PlayerGui")
+
+    -- ลบ Key GUI เก่า
+    for _, g in ipairs(playerGui:GetChildren()) do
+        if g.Name == "540CHEATS_Key" then
+            pcall(function() g:Destroy() end)
+        end
+    end
 
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "540CHEATS_Key"
     keyGui.ResetOnSpawn = false
     keyGui.IgnoreGuiInset = true
-    keyGui.DisplayOrder = 9999
-    keyGui.Parent = playerGui
+    keyGui.DisplayOrder = 99999
+    keyGui.Enabled = true
+
+    local parentOk = pcall(function() keyGui.Parent = playerGui end)
+    if not parentOk or not keyGui.Parent then
+        pcall(function() keyGui.Parent = game:GetService("CoreGui") end)
+    end
+
+    if not keyGui.Parent then
+        warn("[540CHEATS] ไม่สามารถสร้าง Key GUI ได้")
+        return
+    end
+
+    print("[540CHEATS] Key GUI created")
 
     local overlay = Instance.new("Frame")
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     overlay.BackgroundTransparency = 0.4
     overlay.BorderSizePixel = 0
+    overlay.ZIndex = 1
     overlay.Parent = keyGui
 
     local card = Instance.new("Frame")
@@ -1098,6 +1109,7 @@ local function showKeyPrompt()
     card.Position = UDim2.new(0.5, -210, 0.5, -140)
     card.BackgroundColor3 = DARK.bg
     card.BorderSizePixel = 0
+    card.ZIndex = 10
     card.Parent = keyGui
     local bgc = Instance.new("UICorner"); bgc.CornerRadius = UDim.new(0, 14); bgc.Parent = card
     local bgs = Instance.new("UIStroke"); bgs.Color = DARK.accent; bgs.Thickness = 2; bgs.Parent = card
@@ -1106,6 +1118,7 @@ local function showKeyPrompt()
     header.Size = UDim2.new(1, 0, 0, 54)
     header.BackgroundColor3 = DARK.header
     header.BorderSizePixel = 0
+    header.ZIndex = 11
     header.Parent = card
     local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
 
@@ -1114,6 +1127,7 @@ local function showKeyPrompt()
     hbBottom.Position = UDim2.new(0, 0, 1, -12)
     hbBottom.BackgroundColor3 = DARK.header
     hbBottom.BorderSizePixel = 0
+    hbBottom.ZIndex = 11
     hbBottom.Parent = header
 
     local logoBg = Instance.new("Frame")
@@ -1121,6 +1135,7 @@ local function showKeyPrompt()
     logoBg.Position = UDim2.new(0, 14, 0, 10)
     logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     logoBg.BorderSizePixel = 0
+    logoBg.ZIndex = 12
     logoBg.Parent = header
     local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
     local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 0.5; lbgs.Parent = logoBg
@@ -1131,6 +1146,7 @@ local function showKeyPrompt()
     icon.BackgroundTransparency = 1
     icon.Image = "rbxassetid://86571453491468"
     icon.ScaleType = Enum.ScaleType.Fit
+    icon.ZIndex = 13
     icon.Parent = logoBg
 
     task.spawn(function()
@@ -1140,6 +1156,7 @@ local function showKeyPrompt()
             local e = Instance.new("TextLabel")
             e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
             e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
+            e.ZIndex = 13
             e.Parent = logoBg
         end
     end)
@@ -1153,6 +1170,7 @@ local function showKeyPrompt()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Font = FONT
     title.TextSize = 14
+    title.ZIndex = 12
     title.Parent = header
 
     local subtitle = Instance.new("TextLabel")
@@ -1164,6 +1182,7 @@ local function showKeyPrompt()
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Font = FONT
     subtitle.TextSize = 10
+    subtitle.ZIndex = 12
     subtitle.Parent = header
 
     local desc = Instance.new("TextLabel")
@@ -1175,6 +1194,7 @@ local function showKeyPrompt()
     desc.TextXAlignment = Enum.TextXAlignment.Left
     desc.Font = FONT
     desc.TextSize = 11
+    desc.ZIndex = 11
     desc.Parent = card
 
     local inputFrame = Instance.new("Frame")
@@ -1182,6 +1202,7 @@ local function showKeyPrompt()
     inputFrame.Position = UDim2.new(0, 20, 0, 98)
     inputFrame.BackgroundColor3 = DARK.item
     inputFrame.BorderSizePixel = 0
+    inputFrame.ZIndex = 11
     inputFrame.Parent = card
     local ifc = Instance.new("UICorner"); ifc.CornerRadius = UDim.new(0, 8); ifc.Parent = inputFrame
     local ifs = Instance.new("UIStroke"); ifs.Color = DARK.border; ifs.Thickness = 1; ifs.Parent = inputFrame
@@ -1198,9 +1219,10 @@ local function showKeyPrompt()
     input.TextSize = 12
     input.TextXAlignment = Enum.TextXAlignment.Left
     input.ClearTextOnFocus = false
+    input.ZIndex = 12
     input.Parent = inputFrame
 
-    -- ★ MASK SYSTEM
+    -- MASK SYSTEM
     local realKey = ""
     local isUpdating = false
 
@@ -1238,6 +1260,7 @@ local function showKeyPrompt()
     status.TextXAlignment = Enum.TextXAlignment.Left
     status.Font = FONT
     status.TextSize = 11
+    status.ZIndex = 11
     status.Parent = card
 
     local btn = Instance.new("TextButton")
@@ -1249,6 +1272,7 @@ local function showKeyPrompt()
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = FONT
     btn.TextSize = 13
+    btn.ZIndex = 11
     btn.Parent = card
     local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 8); bc.Parent = btn
 
@@ -1261,6 +1285,7 @@ local function showKeyPrompt()
     footer.TextXAlignment = Enum.TextXAlignment.Center
     footer.Font = FONT
     footer.TextSize = 10
+    footer.ZIndex = 11
     footer.Parent = card
 
     btn.MouseEnter:Connect(function()
@@ -1292,7 +1317,6 @@ local function showKeyPrompt()
                 btn.Text = "SUCCESS"
                 btn.BackgroundColor3 = DARK.success
 
-                -- ★ Delay 2 วินาที (ไม่ save key)
                 task.wait(2)
                 pcall(function() keyGui:Destroy() end)
 
@@ -1319,11 +1343,14 @@ local function showKeyPrompt()
     input.FocusLost:Connect(function(enter)
         if enter then trySubmit() end
     end)
+
+    print("[540CHEATS] Key prompt ready")
 end
 
 -- =====================================================
--- MAIN ENTRY — ★ ต้องใส่ key ทุกครั้ง
+-- MAIN ENTRY
 -- =====================================================
 print("[540CHEATS] Initializing...")
-print("[540CHEATS] ต้องใส่ key ทุกครั้งที่รัน")
+print("[540CHEATS] ต้องใส่ key ทุกครั้ง")
+
 showKeyPrompt()
