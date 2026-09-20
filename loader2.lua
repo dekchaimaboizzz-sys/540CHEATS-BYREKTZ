@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice Edition
+-- 540CHEATS | Anime Dice Edition v2
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -50,138 +50,220 @@ end
 -- ★★★ MAIN SCRIPT — ANIME DICE ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice script starting...")
+    print("[540CHEATS] Anime Dice v2 starting...")
 
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local UIS = game:GetService("UserInputService")
+    local RS = game:GetService("ReplicatedStorage")
     local WS = workspace
     local LP = Players.LocalPlayer
 
     local VIM = nil
     pcall(function() VIM = game:GetService("VirtualInputManager") end)
 
-    local CFG = {
-        -- Auto Roll
-        AutoRoll = false,
-        RollDelay = 0.5,
+    -- ===== REMOTE PATHS =====
+    local Network = RS:WaitForChild("Network", 10)
+    local SetAutoRoll = nil
+    local RollDice = nil
+    
+    if Network then
+        pcall(function()
+            SetAutoRoll = Network.RollService.RE.SetAutoRoll
+            RollDice = Network.RollService.RF.RollDice
+        end)
+    end
+
+    print("[540CHEATS] SetAutoRoll found:", SetAutoRoll ~= nil)
+    print("[540CHEATS] RollDice found:", RollDice ~= nil)
+
+    -- ===== HELPER: หาปุ่มด้วยชื่อ =====
+    local function findButton(name)
+        local PG = LP:WaitForChild("PlayerGui")
+        local found = nil
+        for _, obj in ipairs(PG:GetDescendants()) do
+            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Name == name then
+                if obj.Visible then
+                    found = obj
+                    break
+                elseif not found then
+                    found = obj
+                end
+            end
+        end
+        return found
+    end
+
+    -- ===== HELPER: กดปุ่มด้วย Activated =====
+    local function clickButton(btn)
+        if not btn then return false end
+        local success = false
         
-        -- Auto Upgrade
+        -- วิธี 1: Activated event
+        pcall(function()
+            btn:Activate()
+            success = true
+        end)
+        
+        -- วิธี 2: Fire MouseButton1Click
+        if not success then
+            pcall(function()
+                for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+                    conn:Fire()
+                end
+                success = true
+            end)
+        end
+        
+        -- วิธี 3: Simulate click ที่ตำแหน่งปุ่ม
+        if not success and VIM then
+            pcall(function()
+                local pos = btn.AbsolutePosition + btn.AbsoluteSize / 2
+                VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+                task.wait(0.05)
+                VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+                success = true
+            end)
+        end
+        
+        return success
+    end
+
+    -- ===== CFG =====
+    local CFG = {
+        AutoRoll = false,
+        RollDelay = 0.1,
+        AutoRollMethod = "Remote",  -- "Remote" หรือ "Button"
+        
         AutoUpgrade = false,
         UpgradeDelay = 1,
         
-        -- Auto Sell
         AutoSell = false,
-        SellRarity = "Common",
         
-        -- Auto Rebirth
         AutoRebirth = false,
         
-        -- Webhook
-        Webhook = "",
-        
-        -- ESP (optional)
-        ESP = false,
+        AutoSkip = false,
+        AutoKeep = false,
     }
 
     local gui, main, minimizedLogo, notif
     local userAvatar
+    local rollCount = 0
 
     -- =====================================================
-    -- ★★★ AUTO FUNCTIONS ★★★
+    -- ★ AUTO ROLL
     -- =====================================================
-
-    -- Auto Roll
     task.spawn(function()
         while true do
             task.wait(CFG.RollDelay)
             if CFG.AutoRoll then
-                pcall(function()
-                    -- หาปุ่ม Roll
-                    local rollBtn = nil
-                    for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                        if obj:IsA("TextButton") and (obj.Text:lower():find("roll") or obj.Text:lower():find("spin")) then
-                            rollBtn = obj
-                            break
-                        end
-                    end
+                local success = false
+                
+                if CFG.AutoRollMethod == "Remote" and RollDice then
+                    -- วิธี 1: ใช้ RemoteFunction
+                    pcall(function()
+                        RollDice:InvokeServer()
+                        success = true
+                    end)
+                elseif CFG.AutoRollMethod == "Button" then
+                    -- วิธี 2: กดปุ่ม Roll
+                    local rollBtn = findButton("Roll")
                     if rollBtn then
-                        rollBtn:Click()
-                        print("[540CHEATS] Auto Roll")
+                        success = clickButton(rollBtn)
                     end
-                end)
-            end
-        end
-    end)
-
-    -- Auto Upgrade
-    task.spawn(function()
-        while true do
-            task.wait(CFG.UpgradeDelay)
-            if CFG.AutoUpgrade then
-                pcall(function()
-                    local upgradeBtn = nil
-                    for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                        if obj:IsA("TextButton") and obj.Text:lower():find("upgrade") then
-                            upgradeBtn = obj
-                            break
-                        end
+                end
+                
+                -- Fallback: ถ้าวิธีที่เลือกไม่สำเร็จ ลองวิธีอื่น
+                if not success then
+                    if SetAutoRoll then
+                        pcall(function()
+                            SetAutoRoll:FireServer(true)
+                            task.wait(0.5)
+                            SetAutoRoll:FireServer(false)
+                            success = true
+                        end)
                     end
-                    if upgradeBtn then
-                        upgradeBtn:Click()
-                        print("[540CHEATS] Auto Upgrade")
-                    end
-                end)
-            end
-        end
-    end)
-
-    -- Auto Sell
-    task.spawn(function()
-        while true do
-            task.wait(1)
-            if CFG.AutoSell then
-                pcall(function()
-                    local sellBtn = nil
-                    for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                        if obj:IsA("TextButton") and obj.Text:lower():find("sell") then
-                            sellBtn = obj
-                            break
-                        end
-                    end
-                    if sellBtn then
-                        sellBtn:Click()
-                        print("[540CHEATS] Auto Sell")
-                    end
-                end)
-            end
-        end
-    end)
-
-    -- Auto Rebirth
-    task.spawn(function()
-        while true do
-            task.wait(5)
-            if CFG.AutoRebirth then
-                pcall(function()
-                    local rebirthBtn = nil
-                    for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                        if obj:IsA("TextButton") and obj.Text:lower():find("rebirth") then
-                            rebirthBtn = obj
-                            break
-                        end
-                    end
-                    if rebirthBtn then
-                        rebirthBtn:Click()
-                        print("[540CHEATS] Auto Rebirth")
-                    end
-                end)
+                end
+                
+                if success then
+                    rollCount = rollCount + 1
+                end
             end
         end
     end)
 
     -- =====================================================
-    -- ★★★ UI — VALEN HUB STYLE ★★★
+    -- ★ AUTO SKIP / KEEP
+    -- =====================================================
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            if CFG.AutoSkip then
+                local skipBtn = findButton("Skip")
+                if skipBtn and skipBtn.Visible then
+                    clickButton(skipBtn)
+                end
+            end
+            if CFG.AutoKeep then
+                local keepBtn = findButton("Keep")
+                if keepBtn and keepBtn.Visible then
+                    clickButton(keepBtn)
+                end
+            end
+        end
+    end)
+
+    -- =====================================================
+    -- ★ AUTO UPGRADE
+    -- =====================================================
+    task.spawn(function()
+        while true do
+            task.wait(CFG.UpgradeDelay)
+            if CFG.AutoUpgrade then
+                local upgradeBtn = findButton("Upgrades")
+                if upgradeBtn then
+                    clickButton(upgradeBtn)
+                    task.wait(0.3)
+                    -- กลับ Home
+                    local homeBtn = findButton("Home")
+                    if homeBtn then clickButton(homeBtn) end
+                end
+            end
+        end
+    end)
+
+    -- =====================================================
+    -- ★ AUTO SELL
+    -- =====================================================
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            if CFG.AutoSell then
+                local sellBtn = findButton("Sell")
+                if sellBtn and sellBtn.Visible then
+                    clickButton(sellBtn)
+                end
+            end
+        end
+    end)
+
+    -- =====================================================
+    -- ★ AUTO REBIRTH
+    -- =====================================================
+    task.spawn(function()
+        while true do
+            task.wait(3)
+            if CFG.AutoRebirth then
+                local rebirthBtn = findButton("Rebirth")
+                if rebirthBtn then
+                    clickButton(rebirthBtn)
+                end
+            end
+        end
+    end)
+
+    -- =====================================================
+    -- UI — VALEN HUB STYLE
     -- =====================================================
     gui = Instance.new("ScreenGui")
     gui.Name = "540CHEATS_AnimeDice"
@@ -268,7 +350,7 @@ local function runMainScript()
     end)
 
     local headerTitle = Instance.new("TextLabel")
-    headerTitle.Size = UDim2.new(0, 200, 0, 18)
+    headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
     headerTitle.Text = "540CHEATS | Anime Dice"
@@ -279,7 +361,7 @@ local function runMainScript()
     headerTitle.Parent = header
 
     local headerSub = Instance.new("TextLabel")
-    headerSub.Size = UDim2.new(0, 200, 0, 14)
+    headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
     headerSub.Text = "discord.gg/540shop"
@@ -323,7 +405,6 @@ local function runMainScript()
         print("[540CHEATS] ปิดสคริปต์แล้ว")
     end)
 
-    -- Sidebar
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 160, 1, -HEADER_H)
     sidebar.Position = UDim2.new(0, 0, 0, HEADER_H)
@@ -517,8 +598,16 @@ local function runMainScript()
     end
 
     -- Main Tab
-    makeToggle(pages["Main"], "Auto Roll", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
-    makeSlider(pages["Main"], "Roll Delay", 0.1, 2, CFG.RollDelay, function(v) CFG.RollDelay = v end)
+    makeToggle(pages["Main"], "Auto Roll", CFG.AutoRoll, function(v) 
+        CFG.AutoRoll = v 
+        -- ถ้าเปิด auto roll ในเกมด้วย
+        if SetAutoRoll then
+            pcall(function() SetAutoRoll:FireServer(v) end)
+        end
+    end)
+    makeSlider(pages["Main"], "Roll Delay", 0.05, 1, CFG.RollDelay, function(v) CFG.RollDelay = v end)
+    makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
+    makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
 
     -- Upgrades Tab
@@ -530,9 +619,9 @@ local function runMainScript()
 
     -- Settings Tab
     local info = Instance.new("TextLabel")
-    info.Size = UDim2.new(1, 0, 0, 160)
+    info.Size = UDim2.new(1, 0, 0, 200)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice\n\n  > Auto Roll: เปิด/ปิด\n  > Auto Upgrade: เปิด/ปิด\n  > Auto Sell: เปิด/ปิด\n  > Auto Rebirth: เปิด/ปิด\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v2\n\n  ✓ Auto Roll (ใช้ Remote)\n  ✓ Auto Skip\n  ✓ Auto Keep\n  ✓ Auto Upgrade\n  ✓ Auto Sell\n  ✓ Auto Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -581,7 +670,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice"
+    watermark.Text = "540CHEATS | Anime Dice v2"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -591,7 +680,7 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice script loaded successfully")
+    print("[540CHEATS] Anime Dice v2 loaded successfully")
 end
 
 -- =====================================================
@@ -738,9 +827,9 @@ local function showLoadingScreen(callback)
         if isDestroyed then return end
 
         local steps = {
-            { pct = 25, text = "> Loading Anime Dice modules", wait = 0.4 },
+            { pct = 25, text = "> Loading Anime Dice", wait = 0.4 },
             { pct = 50, text = "> Preparing UI", wait = 0.4 },
-            { pct = 75, text = "> Loading Auto Roll", wait = 0.4 },
+            { pct = 75, text = "> Connecting Remotes", wait = 0.4 },
             { pct = 100, text = "> Ready!", wait = 0.5 },
         }
 
@@ -1060,6 +1149,6 @@ end
 -- MAIN ENTRY
 -- =====================================================
 print("[540CHEATS] Initializing...")
-print("[540CHEATS] Anime Dice Edition")
+print("[540CHEATS] Anime Dice v2")
 
 showKeyPrompt()
