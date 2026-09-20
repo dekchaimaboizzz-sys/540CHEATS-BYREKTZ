@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice v7 - Auto Hide
+-- 540CHEATS | Anime Dice v8 - Direct Hide
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -33,10 +33,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN SCRIPT — ANIME DICE v7 ★★★
+-- ★★★ MAIN — ANIME DICE v8 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v7 starting...")
+    print("[540CHEATS] Anime Dice v8 starting...")
 
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -55,14 +55,64 @@ local function runMainScript()
 
     local CFG = {
         AutoRoll = false, RollDelay = 0.1,
-        AutoHide = true,           -- ★ ใหม่: auto hide
+        AutoHide = true,
         AutoSkip = false, AutoKeep = false,
         AutoUpgrade = false, UpgradeDelay = 1,
         AutoSell = false, AutoRebirth = false,
         RollCount = 0,
     }
 
-    -- ===== SILENT CLICK =====
+    -- ===== HUD ELEMENTS ที่ต้องซ่อน =====
+    local HUD_PATHS = {
+        "Root.HUD.Top",
+        "Root.HUD.Left",
+        "Root.HUD.Cash",
+        "Root.HUD.Bottom",
+        "Root.HUD.PutBack",
+        "Root.HUD.BuffBar",
+        "Root.HUD.ProductDisplay",
+    }
+
+    local savedHudStates = {}
+
+    local function findHudElement(path)
+        local parts = {}
+        for p in path:gmatch("[^%.]+") do table.insert(parts, p) end
+        local cur = PG
+        for _, name in ipairs(parts) do
+            cur = cur and cur:FindFirstChild(name)
+            if not cur then return nil end
+        end
+        return cur
+    end
+
+    local function hideHUD()
+        savedHudStates = {}
+        for _, path in ipairs(HUD_PATHS) do
+            local el = findHudElement(path)
+            if el then
+                local ok, vis = pcall(function() return el.Visible end)
+                if ok then
+                    savedHudStates[path] = vis
+                    pcall(function() el.Visible = false end)
+                end
+            end
+        end
+        print("[540CHEATS] HUD hidden")
+    end
+
+    local function showHUD()
+        for path, vis in pairs(savedHudStates) do
+            local el = findHudElement(path)
+            if el then
+                pcall(function() el.Visible = vis end)
+            end
+        end
+        savedHudStates = {}
+        print("[540CHEATS] HUD shown")
+    end
+
+    -- ===== SILENT CLICK (สำหรับ Skip/Keep/Upgrades/Sell/Rebirth) =====
     local function silentClick(btn)
         if not btn then return false end
         local fired = false
@@ -99,28 +149,7 @@ local function runMainScript()
         return nil
     end
 
-    -- ★ หาปุ่ม Hide ด้วยชื่อหลายแบบ
-    local function findHideButton()
-        local names = {"Hide", "Hidden", "HiddenRoll", "HideRoll", "HideButton", "HideToggle"}
-        for _, n in ipairs(names) do
-            local b = findButton(n)
-            if b then return b, n end
-        end
-        -- fallback: หาปุ่มที่อยู่ใกล้ปุ่ม AutoRoll
-        local autoBtn = findButton("AutoRoll") or findButton("Auto")
-        if autoBtn and autoBtn.Parent then
-            for _, sibling in ipairs(autoBtn.Parent:GetChildren()) do
-                if (sibling:IsA("TextButton") or sibling:IsA("ImageButton")) and sibling ~= autoBtn then
-                    if sibling.Name:lower():find("hide") or sibling.Name:lower():find("hidden") then
-                        return sibling, sibling.Name
-                    end
-                end
-            end
-        end
-        return nil, nil
-    end
-
-    -- ★ AUTO HIDE — คลิก Hide เมื่อเปิด Auto Roll
+    -- ★ AUTO HIDE (Direct Visibility)
     local lastHideState = nil
     task.spawn(function()
         while true do
@@ -129,19 +158,10 @@ local function runMainScript()
             if shouldHide ~= lastHideState then
                 lastHideState = shouldHide
                 if shouldHide then
-                    local btn, name = findHideButton()
-                    if btn then
-                        silentClick(btn)
-                        print("[540CHEATS] Auto Hide → clicked:", name)
-                    else
-                        print("[540CHEATS] Auto Hide → button not found")
-                    end
+                    hideHUD()
+                else
+                    showHUD()
                 end
-            end
-            -- ถ้า Auto Roll เปิดอยู่ ให้กด Hide เรื่อยๆ (กันหลุด)
-            if CFG.AutoRoll and CFG.AutoHide then
-                local btn = findHideButton()
-                if btn then silentClick(btn) end
             end
         end
     end)
@@ -225,7 +245,7 @@ local function runMainScript()
     end)
 
     -- =====================================================
-    -- UI
+    -- UI (Valen Style)
     -- =====================================================
     local gui, main, minimizedLogo, userAvatar
 
@@ -317,7 +337,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice v7"
+    headerTitle.Text = "540CHEATS | Anime Dice v8"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -328,7 +348,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "auto-roll + auto-hide"
+    headerSub.Text = "direct-hide"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -366,6 +386,7 @@ local function runMainScript()
     local cbc = Instance.new("UICorner"); cbc.CornerRadius = UDim.new(0, 6); cbc.Parent = closeBtn
     closeBtn.MouseButton1Click:Connect(function()
         if SetAutoRoll then pcall(function() SetAutoRoll:FireServer(false) end) end
+        showHUD()
         pcall(function() gui:Destroy() end)
     end)
 
@@ -560,7 +581,7 @@ local function runMainScript()
     end
 
     makeToggle(pages["Main"], "Auto Roll (Native)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
-    makeToggle(pages["Main"], "Auto Hide (Silent)", CFG.AutoHide, function(v) CFG.AutoHide = v end)
+    makeToggle(pages["Main"], "Auto Hide UI", CFG.AutoHide, function(v) CFG.AutoHide = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
@@ -573,7 +594,7 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 220)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v7\n\n  ✓ Auto Roll (Native Remote)\n  ✓ Auto Hide (กด Hide เอง)\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v8\n\n  ✓ Auto Roll (Native Remote)\n  ✓ Auto Hide UI (Direct Visibility)\n  ✓ ซ่อน HUD ตรงๆ ไม่ต้องกดปุ่ม\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -620,7 +641,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v7"
+    watermark.Text = "540CHEATS | Anime Dice v8"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -630,11 +651,11 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v7 loaded")
+    print("[540CHEATS] Anime Dice v8 loaded")
 end
 
 -- =====================================================
--- ★★★ LOADING SCREEN ★★★
+-- LOADING SCREEN
 -- =====================================================
 local function showLoadingScreen(callback)
     local ok, loadGui = pcall(function()
@@ -692,7 +713,7 @@ local function showLoadingScreen(callback)
     title.Size = UDim2.new(1, 0, 0, 24)
     title.Position = UDim2.new(0, 0, 0, 90)
     title.BackgroundTransparency = 1
-    title.Text = "540CHEATS | Anime Dice v7"
+    title.Text = "540CHEATS | Anime Dice v8"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Font = FONT
@@ -779,7 +800,7 @@ local function showLoadingScreen(callback)
 end
 
 -- =====================================================
--- ★★★ KEY PROMPT ★★★
+-- KEY PROMPT
 -- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
@@ -1014,5 +1035,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing Anime Dice v7...")
+print("[540CHEATS] Initializing Anime Dice v8...")
 showKeyPrompt()
