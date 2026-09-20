@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS v25 | Key + Loading + Full Script
+-- 540CHEATS v25 | Safe Edition
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -23,6 +23,14 @@ local DARK = {
 }
 
 local TweenService = game:GetService("TweenService")
+
+-- ★ SAFE TWEEN HELPER
+local function safeTween(instance, duration, props)
+    if not instance or not instance.Parent then return end
+    pcall(function()
+        TweenService:Create(instance, TweenInfo.new(duration), props):Play()
+    end)
+end
 
 -- =====================================================
 -- KEY VALIDATION
@@ -66,10 +74,13 @@ local function runMainScript()
     local WS = workspace
     local Cam = WS.CurrentCamera
     local LP = Players.LocalPlayer
-    local VIM = game:GetService("VirtualInputManager")
+    
+    -- VIM (optional)
+    local VIM = nil
+    pcall(function() VIM = game:GetService("VirtualInputManager") end)
 
     local Drawing = Drawing or (getgenv and getgenv().Drawing)
-    if not Drawing then warn("ต้องใช้ Drawing API"); return end
+    if not Drawing then warn("[540CHEATS] Drawing API ไม่พร้อม"); return end
 
     local CFG = {
         Aimbot = true, InstantLock = true, Smoothness = 0.55,
@@ -336,11 +347,12 @@ local function runMainScript()
         end
     end)
 
+    -- Trigger
     local lastTrigger = 0
     task.spawn(function()
         while true do
             task.wait(0.01)
-            if CFG.Trigger and tick() - lastTrigger >= CFG.TDelay then
+            if CFG.Trigger and VIM and tick() - lastTrigger >= CFG.TDelay then
                 local t = getClosest()
                 if t then
                     local sp, on = Cam:WorldToViewportPoint(t.Position)
@@ -362,7 +374,7 @@ local function runMainScript()
     end)
 
     LP.Idled:Connect(function()
-        if not CFG.AntiAFK then return end
+        if not CFG.AntiAFK or not VIM then return end
         pcall(function()
             VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
             task.wait(0.1)
@@ -384,15 +396,9 @@ local function runMainScript()
     main.BackgroundColor3 = DARK.bg
     main.BorderSizePixel = 0
     main.Active = true
-    main.BackgroundTransparency = 1
     main.Parent = gui
     local mc = Instance.new("UICorner"); mc.CornerRadius = UDim.new(0, 12); mc.Parent = main
-    local ms = Instance.new("UIStroke"); ms.Color = DARK.border; ms.Thickness = 1; ms.Transparency = 1; ms.Parent = main
-
-    task.spawn(function()
-        TweenService:Create(main, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(ms, TweenInfo.new(0.4), {Transparency = 0}):Play()
-    end)
+    local ms = Instance.new("UIStroke"); ms.Color = DARK.border; ms.Thickness = 1; ms.Parent = main
 
     local HEADER_H = 54
     local header = Instance.new("Frame")
@@ -499,8 +505,6 @@ local function runMainScript()
     minBtn.TextSize = 16
     minBtn.Parent = btnContainer
     local mbc = Instance.new("UICorner"); mbc.CornerRadius = UDim.new(0, 6); mbc.Parent = minBtn
-    minBtn.MouseEnter:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 120, 200), TextColor3 = Color3.new(1,1,1)}):Play() end)
-    minBtn.MouseLeave:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28, 38, 55), TextColor3 = Color3.fromRGB(200, 210, 230)}):Play() end)
     minBtn.MouseButton1Click:Connect(function() main.Visible = false; minimizedLogo.Visible = true end)
 
     local closeBtn = Instance.new("TextButton")
@@ -514,8 +518,6 @@ local function runMainScript()
     closeBtn.TextSize = 18
     closeBtn.Parent = btnContainer
     local cbc = Instance.new("UICorner"); cbc.CornerRadius = UDim.new(0, 6); cbc.Parent = closeBtn
-    closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200, 50, 60), TextColor3 = Color3.new(1,1,1)}):Play() end)
-    closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(55, 28, 34), TextColor3 = Color3.fromRGB(230, 180, 190)}):Play() end)
     closeBtn.MouseButton1Click:Connect(function()
         pcall(function() fovCircle:Remove() end)
         pcall(function() crossH:Remove() end)
@@ -639,10 +641,10 @@ local function runMainScript()
     userId.Parent = userPanel
 
     task.spawn(function()
-        local ok, thumb = pcall(function()
-            return Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+        pcall(function()
+            local thumb = Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+            if thumb then userAvatar.Image = thumb end
         end)
-        if ok and thumb then userAvatar.Image = thumb end
     end)
 
     local function makeToggle(parent, label, initial, cb)
@@ -672,9 +674,7 @@ local function runMainScript()
         btn.MouseButton1Click:Connect(function()
             st = not st
             sw.BackgroundColor3 = st and DARK.toggleOn or DARK.toggleOff
-            TweenService:Create(k, TweenInfo.new(0.15), {
-                Position = st and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-            }):Play()
+            safeTween(k, 0.15, {Position = st and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)})
             cb(st)
         end)
     end
@@ -855,12 +855,14 @@ local function runMainScript()
     local ns = Instance.new("UIStroke"); ns.Color = DARK.accent; ns.Thickness = 1; ns.Parent = notif
 
     local function showNotif(text)
+        if not notif then return end
         notif.Text = "  > " .. text
         notif.Visible = true
-        TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
+        safeTween(notif, 0.3, {Position = UDim2.new(0.5, -150, 0, 20)})
         task.delay(1.5, function()
-            TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -150, 0, -40)}):Play()
-            task.wait(0.4); notif.Visible = false
+            safeTween(notif, 0.3, {Position = UDim2.new(0.5, -150, 0, -40)})
+            task.wait(0.4)
+            if notif then notif.Visible = false end
         end)
     end
 
@@ -897,10 +899,10 @@ local function runMainScript()
 end
 
 -- =====================================================
--- ★★★ LOADING SCREEN v3 ★★★
+-- ★★★ LOADING SCREEN - SIMPLE + SAFE ★★★
 -- =====================================================
 local function showLoadingScreen(callback)
-    local ok_setup, loadGui = pcall(function()
+    local ok, loadGui = pcall(function()
         local LP = game:GetService("Players").LocalPlayer
         local playerGui = LP:WaitForChild("PlayerGui")
         local gui = Instance.new("ScreenGui")
@@ -911,131 +913,82 @@ local function showLoadingScreen(callback)
         gui.Parent = playerGui
         return gui
     end)
-    if not ok_setup or not loadGui then
+    if not ok or not loadGui then
         if callback then callback() end
         return
     end
 
     local isDestroyed = false
-    local card, cardStroke, overlay
-    local title, titleGlow, subtitle
-    local barBg, barFill, shimmer
-    local statusText, percentLabel, footer
-    local logoContainer, ring1, ring2, logoGlow, logoIcon
+    local card, overlay, title, subtitle, barBg, barFill
+    local statusText, percentLabel, footer, logoIcon
 
-    local setupOk = pcall(function()
+    local setup = pcall(function()
         overlay = Instance.new("Frame")
         overlay.Size = UDim2.new(1, 0, 1, 0)
         overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 1
+        overlay.BackgroundTransparency = 0.3
         overlay.BorderSizePixel = 0
         overlay.Parent = loadGui
-        TweenService:Create(overlay, TweenInfo.new(0.4), {BackgroundTransparency = 0.25}):Play()
 
         card = Instance.new("Frame")
-        card.Size = UDim2.new(0, 460, 0, 260)
-        card.Position = UDim2.new(0.5, -230, 0.5, -130)
+        card.Size = UDim2.new(0, 420, 0, 220)
+        card.Position = UDim2.new(0.5, -210, 0.5, -110)
         card.BackgroundColor3 = DARK.bg
         card.BorderSizePixel = 0
-        card.BackgroundTransparency = 1
         card.Parent = loadGui
-        local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 16); cc.Parent = card
-
-        cardStroke = Instance.new("UIStroke")
-        cardStroke.Color = DARK.accent
-        cardStroke.Thickness = 2
-        cardStroke.Transparency = 1
-        cardStroke.Parent = card
-
-        logoContainer = Instance.new("Frame")
-        logoContainer.Size = UDim2.new(0, 80, 0, 80)
-        logoContainer.Position = UDim2.new(0.5, -40, 0, 30)
-        logoContainer.BackgroundTransparency = 1
-        logoContainer.Parent = card
-
-        ring1 = Instance.new("Frame")
-        ring1.AnchorPoint = Vector2.new(0.5, 0.5)
-        ring1.Size = UDim2.new(0, 76, 0, 76)
-        ring1.Position = UDim2.new(0.5, 0, 0.5, 0)
-        ring1.BackgroundTransparency = 1
-        ring1.Parent = logoContainer
-        local r1c = Instance.new("UICorner"); r1c.CornerRadius = UDim.new(1, 0); r1c.Parent = ring1
-        local r1s = Instance.new("UIStroke"); r1s.Color = DARK.accent; r1s.Thickness = 2; r1s.Transparency = 0.5; r1s.Parent = ring1
-
-        ring2 = Instance.new("Frame")
-        ring2.AnchorPoint = Vector2.new(0.5, 0.5)
-        ring2.Size = UDim2.new(0, 68, 0, 68)
-        ring2.Position = UDim2.new(0.5, 0, 0.5, 0)
-        ring2.BackgroundTransparency = 1
-        ring2.Parent = logoContainer
-        local r2c = Instance.new("UICorner"); r2c.CornerRadius = UDim.new(1, 0); r2c.Parent = ring2
-        local r2s = Instance.new("UIStroke"); r2s.Color = Color3.fromRGB(0, 255, 200); r2s.Thickness = 1.5; r2s.Transparency = 0.3; r2s.Parent = ring2
-
-        logoGlow = Instance.new("Frame")
-        logoGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-        logoGlow.Size = UDim2.new(0, 60, 0, 60)
-        logoGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        logoGlow.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-        logoGlow.BackgroundTransparency = 1
-        logoGlow.BorderSizePixel = 0
-        logoGlow.Parent = logoContainer
-        local lgC = Instance.new("UICorner"); lgC.CornerRadius = UDim.new(1, 0); lgC.Parent = logoGlow
+        local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 14); cc.Parent = card
+        local cs = Instance.new("UIStroke"); cs.Color = DARK.accent; cs.Thickness = 2; cs.Parent = card
 
         logoIcon = Instance.new("ImageLabel")
-        logoIcon.Size = UDim2.new(0, 48, 0, 48)
-        logoIcon.Position = UDim2.new(0.5, -24, 0.5, -24)
+        logoIcon.Size = UDim2.new(0, 60, 0, 60)
+        logoIcon.Position = UDim2.new(0.5, -30, 0, 20)
         logoIcon.BackgroundTransparency = 1
         logoIcon.Image = "rbxassetid://86571453491468"
-        logoIcon.ImageTransparency = 1
         logoIcon.ScaleType = Enum.ScaleType.Fit
-        logoIcon.Parent = logoContainer
+        logoIcon.Parent = card
+
+        task.spawn(function()
+            task.wait(0.5)
+            if isDestroyed or not logoIcon or not logoIcon.Parent then return end
+            if not logoIcon.IsLoaded then
+                pcall(function() logoIcon:Destroy() end)
+                local e = Instance.new("TextLabel")
+                e.Size = UDim2.new(1, 0, 0, 60); e.Position = UDim2.new(0, 0, 0, 20)
+                e.BackgroundTransparency = 1
+                e.Text = "💠"; e.TextSize = 40; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.Parent = card
+            end
+        end)
 
         title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, 0, 0, 24)
-        title.Position = UDim2.new(0, 0, 0, 120)
+        title.Position = UDim2.new(0, 0, 0, 90)
         title.BackgroundTransparency = 1
         title.Text = "540CHEATS"
         title.TextColor3 = Color3.new(1, 1, 1)
         title.TextXAlignment = Enum.TextXAlignment.Center
         title.Font = FONT
         title.TextSize = 20
-        title.TextTransparency = 1
         title.Parent = card
-
-        titleGlow = Instance.new("TextLabel")
-        titleGlow.Size = UDim2.new(1, 0, 0, 24)
-        titleGlow.Position = UDim2.new(0, 0, 0, 120)
-        titleGlow.BackgroundTransparency = 1
-        titleGlow.Text = "540CHEATS"
-        titleGlow.TextColor3 = DARK.accent
-        titleGlow.TextXAlignment = Enum.TextXAlignment.Center
-        titleGlow.Font = FONT
-        titleGlow.TextSize = 20
-        titleGlow.TextTransparency = 1
-        titleGlow.ZIndex = 0
-        titleGlow.Parent = card
 
         subtitle = Instance.new("TextLabel")
         subtitle.Size = UDim2.new(1, 0, 0, 16)
-        subtitle.Position = UDim2.new(0, 0, 0, 145)
+        subtitle.Position = UDim2.new(0, 0, 0, 115)
         subtitle.BackgroundTransparency = 1
         subtitle.Text = "discord.gg/540shop"
         subtitle.TextColor3 = DARK.subtext
         subtitle.TextXAlignment = Enum.TextXAlignment.Center
         subtitle.Font = FONT
         subtitle.TextSize = 11
-        subtitle.TextTransparency = 1
         subtitle.Parent = card
 
         barBg = Instance.new("Frame")
         barBg.Size = UDim2.new(1, -60, 0, 10)
-        barBg.Position = UDim2.new(0, 30, 0, 180)
+        barBg.Position = UDim2.new(0, 30, 0, 150)
         barBg.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
         barBg.BorderSizePixel = 0
-        barBg.BackgroundTransparency = 1
         barBg.Parent = card
         local bbc = Instance.new("UICorner"); bbc.CornerRadius = UDim.new(1, 0); bbc.Parent = barBg
-        local bbs = Instance.new("UIStroke"); bbs.Color = DARK.border; bbs.Thickness = 1; bbs.Transparency = 1; bbs.Parent = barBg
 
         barFill = Instance.new("Frame")
         barFill.Size = UDim2.new(0, 0, 1, 0)
@@ -1044,138 +997,64 @@ local function showLoadingScreen(callback)
         barFill.Parent = barBg
         local bfc = Instance.new("UICorner"); bfc.CornerRadius = UDim.new(1, 0); bfc.Parent = barFill
 
-        shimmer = Instance.new("Frame")
-        shimmer.Size = UDim2.new(0, 40, 1, 0)
-        shimmer.Position = UDim2.new(0, -50, 0, 0)
-        shimmer.BackgroundColor3 = Color3.new(1, 1, 1)
-        shimmer.BackgroundTransparency = 0.7
-        shimmer.BorderSizePixel = 0
-        shimmer.Parent = barFill
-        local shc = Instance.new("UICorner"); shc.CornerRadius = UDim.new(1, 0); shc.Parent = shimmer
-
         statusText = Instance.new("TextLabel")
         statusText.Size = UDim2.new(1, -60, 0, 16)
-        statusText.Position = UDim2.new(0, 30, 0, 200)
+        statusText.Position = UDim2.new(0, 30, 0, 168)
         statusText.BackgroundTransparency = 1
-        statusText.Text = "> Initializing..."
+        statusText.Text = "> Loading..."
         statusText.TextColor3 = DARK.subtext
         statusText.TextXAlignment = Enum.TextXAlignment.Left
         statusText.Font = FONT
         statusText.TextSize = 11
-        statusText.TextTransparency = 1
         statusText.Parent = card
 
         percentLabel = Instance.new("TextLabel")
         percentLabel.Size = UDim2.new(0, 60, 0, 16)
-        percentLabel.Position = UDim2.new(1, -90, 0, 200)
+        percentLabel.Position = UDim2.new(1, -90, 0, 168)
         percentLabel.BackgroundTransparency = 1
         percentLabel.Text = "0%"
         percentLabel.TextColor3 = DARK.accent
         percentLabel.TextXAlignment = Enum.TextXAlignment.Right
         percentLabel.Font = FONT
         percentLabel.TextSize = 11
-        percentLabel.TextTransparency = 1
         percentLabel.Parent = card
 
         footer = Instance.new("TextLabel")
         footer.Size = UDim2.new(1, -60, 0, 14)
-        footer.Position = UDim2.new(0, 30, 1, -28)
+        footer.Position = UDim2.new(0, 30, 1, -24)
         footer.BackgroundTransparency = 1
         footer.Text = "540CHEATS © discord.gg/540shop"
         footer.TextColor3 = DARK.subtext
         footer.TextXAlignment = Enum.TextXAlignment.Left
         footer.Font = FONT
         footer.TextSize = 9
-        footer.TextTransparency = 1
         footer.Parent = card
     end)
 
-    if not setupOk then
+    if not setup then
         pcall(function() loadGui:Destroy() end)
         if callback then callback() end
         return
     end
 
-    TweenService:Create(card, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(cardStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
-    TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    TweenService:Create(subtitle, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    TweenService:Create(barBg, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(statusText, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    TweenService:Create(percentLabel, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    TweenService:Create(footer, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    if logoIcon then
-        TweenService:Create(logoIcon, TweenInfo.new(0.5), {ImageTransparency = 0}):Play()
-    end
-
     task.spawn(function()
-        task.wait(0.5)
-        if isDestroyed or not logoIcon or not logoIcon.Parent then return end
-        if not logoIcon.IsLoaded then
-            pcall(function() logoIcon:Destroy() end)
-            local e = Instance.new("TextLabel")
-            e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
-            e.Text = "💠"; e.TextSize = 32; e.Font = FONT; e.TextColor3 = DARK.accent
-            e.Parent = logoContainer
-        end
-    end)
-
-    task.spawn(function()
-        local rot = 0
-        while not isDestroyed and card and card.Parent do
-            task.wait(0.02)
-            rot = rot + 3
-            if ring1 then ring1.Rotation = rot end
-            if ring2 then ring2.Rotation = -rot * 1.5 end
-        end
-    end)
-
-    task.spawn(function()
-        while not isDestroyed and logoGlow and logoGlow.Parent do
-            TweenService:Create(logoGlow, TweenInfo.new(0.8), {BackgroundTransparency = 0.85}):Play()
-            task.wait(0.8)
-            if isDestroyed then break end
-            TweenService:Create(logoGlow, TweenInfo.new(0.8), {BackgroundTransparency = 0.95}):Play()
-            task.wait(0.8)
-        end
-    end)
-
-    task.spawn(function()
-        while not isDestroyed and titleGlow and titleGlow.Parent do
-            TweenService:Create(titleGlow, TweenInfo.new(1.2), {TextTransparency = 0.7}):Play()
-            task.wait(1.2)
-            if isDestroyed then break end
-            TweenService:Create(titleGlow, TweenInfo.new(1.2), {TextTransparency = 0.95}):Play()
-            task.wait(1.2)
-        end
-    end)
-
-    task.spawn(function()
-        while not isDestroyed and shimmer and shimmer.Parent do
-            shimmer.Position = UDim2.new(0, -50, 0, 0)
-            TweenService:Create(shimmer, TweenInfo.new(1.2), {Position = UDim2.new(1, 0, 0, 0)}):Play()
-            task.wait(1.3)
-        end
-    end)
-
-    task.spawn(function()
-        task.wait(0.6)
+        task.wait(0.3)
         if isDestroyed then return end
 
         local steps = {
-            { pct = 12, text = "> Loading modules", wait = 0.35 },
-            { pct = 28, text = "> Preparing UI", wait = 0.3 },
-            { pct = 45, text = "> Loading ESP", wait = 0.4 },
-            { pct = 62, text = "> Loading Aimbot", wait = 0.3 },
-            { pct = 78, text = "> Applying settings", wait = 0.3 },
-            { pct = 92, text = "> Finalizing", wait = 0.25 },
-            { pct = 100, text = "> Ready!", wait = 0.5 },
+            { pct = 20, text = "> Loading modules", wait = 0.35 },
+            { pct = 45, text = "> Preparing UI", wait = 0.35 },
+            { pct = 70, text = "> Loading Aimbot", wait = 0.35 },
+            { pct = 90, text = "> Applying settings", wait = 0.3 },
+            { pct = 100, text = "> Ready!", wait = 0.4 },
         }
 
         local currentPct = 0
         for _, step in ipairs(steps) do
             if isDestroyed then return end
-            statusText.Text = step.text
+            if statusText and statusText.Parent then
+                statusText.Text = step.text
+            end
             local targetPct = step.pct
             local startPct = currentPct
             local duration = step.wait
@@ -1186,37 +1065,25 @@ local function showLoadingScreen(callback)
                 task.wait(duration / frames)
                 local p = i / frames
                 local curr = math.floor(startPct + (targetPct - startPct) * p)
-                percentLabel.Text = curr .. "%"
-                barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
+                if percentLabel and percentLabel.Parent then
+                    percentLabel.Text = curr .. "%"
+                end
+                if barFill and barFill.Parent then
+                    barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
+                end
             end
 
-            percentLabel.Text = targetPct .. "%"
-            barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
+            if percentLabel and percentLabel.Parent then
+                percentLabel.Text = targetPct .. "%"
+            end
+            if barFill and barFill.Parent then
+                barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
+            end
             currentPct = targetPct
         end
 
-        task.wait(0.4)
-        if isDestroyed then return end
-
-        percentLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-        barFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-
+        task.wait(0.3)
         isDestroyed = true
-        TweenService:Create(card, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(cardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
-        TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(titleGlow, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(subtitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(barBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(statusText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(percentLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(footer, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(overlay, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        if logoIcon and logoIcon.Parent then
-            TweenService:Create(logoIcon, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
-        end
-
-        task.wait(0.55)
         pcall(function() loadGui:Destroy() end)
 
         if callback then callback() end
@@ -1224,7 +1091,7 @@ local function showLoadingScreen(callback)
 end
 
 -- =====================================================
--- ★★★ KEY PROMPT ★★★
+-- ★★★ KEY PROMPT - SIMPLE + SAFE ★★★
 -- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
@@ -1249,16 +1116,14 @@ local function showKeyPrompt()
     card.Position = UDim2.new(0.5, -210, 0.5, -140)
     card.BackgroundColor3 = DARK.bg
     card.BorderSizePixel = 0
-    card.BackgroundTransparency = 1
     card.Parent = keyGui
     local bgc = Instance.new("UICorner"); bgc.CornerRadius = UDim.new(0, 14); bgc.Parent = card
-    local bgs = Instance.new("UIStroke"); bgs.Color = DARK.accent; bgs.Thickness = 2; bgs.Transparency = 1; bgs.Parent = card
+    local bgs = Instance.new("UIStroke"); bgs.Color = DARK.accent; bgs.Thickness = 2; bgs.Parent = card
 
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 54)
     header.BackgroundColor3 = DARK.header
     header.BorderSizePixel = 0
-    header.BackgroundTransparency = 1
     header.Parent = card
     local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
 
@@ -1267,33 +1132,22 @@ local function showKeyPrompt()
     hbBottom.Position = UDim2.new(0, 0, 1, -12)
     hbBottom.BackgroundColor3 = DARK.header
     hbBottom.BorderSizePixel = 0
-    hbBottom.BackgroundTransparency = 1
     hbBottom.Parent = header
-
-    local accentLine = Instance.new("Frame")
-    accentLine.Size = UDim2.new(1, -24, 0, 1)
-    accentLine.Position = UDim2.new(0, 12, 1, -1)
-    accentLine.BackgroundColor3 = DARK.headerAccent
-    accentLine.BorderSizePixel = 0
-    accentLine.BackgroundTransparency = 1
-    accentLine.Parent = header
 
     local logoBg = Instance.new("Frame")
     logoBg.Size = UDim2.new(0, 34, 0, 34)
     logoBg.Position = UDim2.new(0, 14, 0, 10)
     logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     logoBg.BorderSizePixel = 0
-    logoBg.BackgroundTransparency = 1
     logoBg.Parent = header
     local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
-    local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 1; lbgs.Parent = logoBg
+    local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 0.5; lbgs.Parent = logoBg
 
     local icon = Instance.new("ImageLabel")
     icon.Size = UDim2.new(0, 26, 0, 26)
     icon.Position = UDim2.new(0.5, -13, 0.5, -13)
     icon.BackgroundTransparency = 1
     icon.Image = "rbxassetid://86571453491468"
-    icon.ImageTransparency = 1
     icon.ScaleType = Enum.ScaleType.Fit
     icon.Parent = logoBg
 
@@ -1304,9 +1158,7 @@ local function showKeyPrompt()
             local e = Instance.new("TextLabel")
             e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
             e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
-            e.TextTransparency = 1
             e.Parent = logoBg
-            TweenService:Create(e, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
         end
     end)
 
@@ -1319,7 +1171,6 @@ local function showKeyPrompt()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Font = FONT
     title.TextSize = 14
-    title.TextTransparency = 1
     title.Parent = header
 
     local subtitle = Instance.new("TextLabel")
@@ -1331,7 +1182,6 @@ local function showKeyPrompt()
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Font = FONT
     subtitle.TextSize = 10
-    subtitle.TextTransparency = 1
     subtitle.Parent = header
 
     local desc = Instance.new("TextLabel")
@@ -1343,7 +1193,6 @@ local function showKeyPrompt()
     desc.TextXAlignment = Enum.TextXAlignment.Left
     desc.Font = FONT
     desc.TextSize = 11
-    desc.TextTransparency = 1
     desc.Parent = card
 
     local inputFrame = Instance.new("Frame")
@@ -1351,10 +1200,9 @@ local function showKeyPrompt()
     inputFrame.Position = UDim2.new(0, 20, 0, 98)
     inputFrame.BackgroundColor3 = DARK.item
     inputFrame.BorderSizePixel = 0
-    inputFrame.BackgroundTransparency = 1
     inputFrame.Parent = card
     local ifc = Instance.new("UICorner"); ifc.CornerRadius = UDim.new(0, 8); ifc.Parent = inputFrame
-    local ifs = Instance.new("UIStroke"); ifs.Color = DARK.border; ifs.Thickness = 1; ifs.Transparency = 1; ifs.Parent = inputFrame
+    local ifs = Instance.new("UIStroke"); ifs.Color = DARK.border; ifs.Thickness = 1; ifs.Parent = inputFrame
 
     local input = Instance.new("TextBox")
     input.Size = UDim2.new(1, -24, 1, 0)
@@ -1368,7 +1216,6 @@ local function showKeyPrompt()
     input.TextSize = 12
     input.TextXAlignment = Enum.TextXAlignment.Left
     input.ClearTextOnFocus = false
-    input.TextTransparency = 1
     input.Parent = inputFrame
 
     local status = Instance.new("TextLabel")
@@ -1380,7 +1227,6 @@ local function showKeyPrompt()
     status.TextXAlignment = Enum.TextXAlignment.Left
     status.Font = FONT
     status.TextSize = 11
-    status.TextTransparency = 1
     status.Parent = card
 
     local btn = Instance.new("TextButton")
@@ -1392,8 +1238,6 @@ local function showKeyPrompt()
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = FONT
     btn.TextSize = 13
-    btn.TextTransparency = 1
-    btn.BackgroundTransparency = 1
     btn.Parent = card
     local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 8); bc.Parent = btn
 
@@ -1406,34 +1250,13 @@ local function showKeyPrompt()
     footer.TextXAlignment = Enum.TextXAlignment.Center
     footer.Font = FONT
     footer.TextSize = 10
-    footer.TextTransparency = 1
     footer.Parent = card
 
-    TweenService:Create(card, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(bgs, TweenInfo.new(0.3), {Transparency = 0}):Play()
-    TweenService:Create(header, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(hbBottom, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(accentLine, TweenInfo.new(0.3), {BackgroundTransparency = 0.5}):Play()
-    TweenService:Create(logoBg, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(lbgs, TweenInfo.new(0.3), {Transparency = 0.5}):Play()
-    TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(subtitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(desc, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(inputFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(ifs, TweenInfo.new(0.3), {Transparency = 0}):Play()
-    TweenService:Create(input, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(btn, TweenInfo.new(0.3), {BackgroundTransparency = 0, TextTransparency = 0}):Play()
-    TweenService:Create(footer, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    if icon.Parent then
-        TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
-    end
-
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 180, 255)}):Play()
+        safeTween(btn, 0.15, {BackgroundColor3 = Color3.fromRGB(0, 180, 255)})
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = DARK.toggleOn}):Play()
+        safeTween(btn, 0.15, {BackgroundColor3 = DARK.toggleOn})
     end)
 
     local function trySubmit()
@@ -1460,7 +1283,7 @@ local function showKeyPrompt()
                 saveKey(key)
 
                 task.wait(0.8)
-                keyGui:Destroy()
+                pcall(function() keyGui:Destroy() end)
 
                 showLoadingScreen(function()
                     print("[540CHEATS] Loading main script...")
