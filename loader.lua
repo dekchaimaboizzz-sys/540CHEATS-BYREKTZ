@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS v25 | Safe Edition
+-- 540CHEATS v25 | Key + Loading + Full Script
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -24,7 +24,6 @@ local DARK = {
 
 local TweenService = game:GetService("TweenService")
 
--- ★ SAFE TWEEN HELPER
 local function safeTween(instance, duration, props)
     if not instance or not instance.Parent then return end
     pcall(function()
@@ -51,7 +50,7 @@ end
 local function getSavedKey()
     if isfile and isfile(SCRIPT_KEY_FILE) then
         local ok, key = pcall(function() return readfile(SCRIPT_KEY_FILE) end)
-        if ok and key then return key end
+        if ok and key and #key > 0 then return key end
     end
     return nil
 end
@@ -74,8 +73,7 @@ local function runMainScript()
     local WS = workspace
     local Cam = WS.CurrentCamera
     local LP = Players.LocalPlayer
-    
-    -- VIM (optional)
+
     local VIM = nil
     pcall(function() VIM = game:GetService("VirtualInputManager") end)
 
@@ -347,7 +345,6 @@ local function runMainScript()
         end
     end)
 
-    -- Trigger
     local lastTrigger = 0
     task.spawn(function()
         while true do
@@ -899,7 +896,7 @@ local function runMainScript()
 end
 
 -- =====================================================
--- ★★★ LOADING SCREEN - SIMPLE + SAFE ★★★
+-- ★★★ LOADING SCREEN ★★★
 -- =====================================================
 local function showLoadingScreen(callback)
     local ok, loadGui = pcall(function()
@@ -1091,7 +1088,7 @@ local function showLoadingScreen(callback)
 end
 
 -- =====================================================
--- ★★★ KEY PROMPT - SIMPLE + SAFE ★★★
+-- ★★★ KEY PROMPT - MASKED ★★★
 -- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
@@ -1218,6 +1215,35 @@ local function showKeyPrompt()
     input.ClearTextOnFocus = false
     input.Parent = inputFrame
 
+    -- ★ MASK SYSTEM
+    local realKey = ""
+    local isUpdating = false
+
+    input:GetPropertyChangedSignal("Text"):Connect(function()
+        if isUpdating then return end
+        isUpdating = true
+
+        local current = input.Text
+        local currentLen = #current
+        local realLen = #realKey
+
+        if currentLen > realLen then
+            local added = current:sub(realLen + 1)
+            added = added:gsub("%*", "")
+            realKey = realKey .. added
+        elseif currentLen < realLen then
+            realKey = realKey:sub(1, currentLen)
+        else
+            local expectedMask = string.rep("*", realLen)
+            if current ~= expectedMask and current ~= "" then
+                realKey = current:gsub("%*", "")
+            end
+        end
+
+        input.Text = string.rep("*", #realKey)
+        isUpdating = false
+    end)
+
     local status = Instance.new("TextLabel")
     status.Size = UDim2.new(1, -40, 0, 20)
     status.Position = UDim2.new(0, 20, 0, 152)
@@ -1260,7 +1286,7 @@ local function showKeyPrompt()
     end)
 
     local function trySubmit()
-        local key = input.Text:gsub("%s+", "")
+        local key = realKey:gsub("%s+", "")
         if key == "" then
             status.Text = "! Please enter a key"
             status.TextColor3 = Color3.fromRGB(255, 200, 0)
@@ -1282,7 +1308,8 @@ local function showKeyPrompt()
                 btn.BackgroundColor3 = DARK.success
                 saveKey(key)
 
-                task.wait(0.8)
+                -- ★ Delay 2 วินาที
+                task.wait(2)
                 pcall(function() keyGui:Destroy() end)
 
                 showLoadingScreen(function()
@@ -1299,6 +1326,7 @@ local function showKeyPrompt()
                 btn.BackgroundColor3 = DARK.toggleOn
                 btn.Active = true
                 input.Text = ""
+                realKey = ""
             end
         end)
     end
