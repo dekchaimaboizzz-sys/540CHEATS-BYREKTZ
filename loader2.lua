@@ -1,5 +1,5 @@
 -- =====================================================
--- 540CHEATS | Anime Dice v9 - Recursive HUD Hide
+-- 540CHEATS | Anime Dice v10 - Full HUD + Topbar Hide
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
@@ -33,10 +33,10 @@ local function validateKey(userKey)
 end
 
 -- =====================================================
--- ★★★ MAIN — ANIME DICE v9 ★★★
+-- ★★★ MAIN — ANIME DICE v10 ★★★
 -- =====================================================
 local function runMainScript()
-    print("[540CHEATS] Anime Dice v9 starting...")
+    print("[540CHEATS] Anime Dice v10 starting...")
 
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -62,13 +62,11 @@ local function runMainScript()
         RollCount = 0,
     }
 
-    -- ===== บันทึกค่า Visible เดิมของทุก GuiObject =====
+    local TOPBAR_NAMES = {"TopbarStandard", "TopbarStandardClipped", "TopbarCentered", "TopbarCenteredClipped"}
     local savedStates = {}
 
     local function recursiveHide(el, visible)
         if not el then return end
-        
-        -- ถ้าเป็น GuiObject ให้ set Visible
         if el:IsA("GuiObject") then
             local ok, vis = pcall(function() return el.Visible end)
             if ok then
@@ -78,54 +76,69 @@ local function runMainScript()
                 pcall(function() el.Visible = visible end)
             end
         end
-        
-        -- วน child ต่อ (ทั้ง Folder และ GuiObject)
         for _, child in ipairs(el:GetChildren()) do
             recursiveHide(child, visible)
+        end
+    end
+
+    local function hideTopbar()
+        for _, name in ipairs(TOPBAR_NAMES) do
+            local t = PG:FindFirstChild(name)
+            if t then
+                if t:IsA("GuiObject") then
+                    savedStates["topbar_" .. name] = t.Visible
+                    pcall(function() t.Visible = false end)
+                end
+                local h = t:FindFirstChild("Holders")
+                if h and h:IsA("GuiObject") then
+                    savedStates["topbarholder_" .. name] = h.Visible
+                    pcall(function() h.Visible = false end)
+                end
+            end
+        end
+    end
+
+    local function showTopbar()
+        for _, name in ipairs(TOPBAR_NAMES) do
+            local key1 = "topbar_" .. name
+            local key2 = "topbarholder_" .. name
+            local t = PG:FindFirstChild(name)
+            if t then
+                if savedStates[key1] ~= nil then
+                    pcall(function() t.Visible = savedStates[key1] end)
+                end
+                local h = t:FindFirstChild("Holders")
+                if h and savedStates[key2] ~= nil then
+                    pcall(function() h.Visible = savedStates[key2] end)
+                end
+            end
         end
     end
 
     local function hideHUD()
         savedStates = {}
         local root = PG:FindFirstChild("Root")
-        if not root then 
-            print("[540CHEATS] Root not found!")
-            return 
-        end
+        if not root then print("[540CHEATS] Root not found!"); return end
         local hud = root:FindFirstChild("HUD")
-        if not hud then 
-            print("[540CHEATS] HUD not found!")
-            return 
-        end
+        if not hud then print("[540CHEATS] HUD not found!"); return end
         recursiveHide(hud, false)
-        print("[540CHEATS] HUD hidden ✓")
+        hideTopbar()
+        print("[540CHEATS] HUD + Topbar hidden ✓")
     end
 
     local function showHUD()
         local count = 0
         for el, vis in pairs(savedStates) do
-            if el and el.Parent then
+            if type(el) ~= "string" and el and el.Parent then
                 pcall(function() el.Visible = vis end)
                 count = count + 1
             end
         end
+        showTopbar()
         savedStates = {}
-        print("[540CHEATS] HUD shown (" .. count .. " elements)")
+        print("[540CHEATS] HUD + Topbar shown (" .. count .. " elements)")
     end
 
-    -- ===== DEBUG: แสดงสถานะ HUD ทั้งหมด =====
-    local function debugHUD()
-        local root = PG:FindFirstChild("Root")
-        local hud = root and root:FindFirstChild("HUD")
-        if not hud then print("[DEBUG] No HUD"); return end
-        print("[DEBUG] HUD children:")
-        for _, child in ipairs(hud:GetChildren()) do
-            local ok, vis = pcall(function() return child.Visible end)
-            print("  " .. child.ClassName .. " | " .. child.Name .. " | Visible: " .. (ok and tostring(vis) or "N/A"))
-        end
-    end
-
-    -- ===== SILENT CLICK =====
     local function silentClick(btn)
         if not btn then return false end
         local fired = false
@@ -157,7 +170,6 @@ local function runMainScript()
         return nil
     end
 
-    -- ★ AUTO HIDE
     local lastHideState = nil
     task.spawn(function()
         while true do
@@ -165,18 +177,11 @@ local function runMainScript()
             local shouldHide = CFG.AutoRoll and CFG.AutoHide
             if shouldHide ~= lastHideState then
                 lastHideState = shouldHide
-                if shouldHide then
-                    hideHUD()
-                    task.wait(0.5)
-                    debugHUD()
-                else
-                    showHUD()
-                end
+                if shouldHide then hideHUD() else showHUD() end
             end
         end
     end)
 
-    -- ===== NATIVE AUTO ROLL =====
     local lastAutoRollState = nil
     task.spawn(function()
         while true do
@@ -347,7 +352,7 @@ local function runMainScript()
     headerTitle.Size = UDim2.new(0, 250, 0, 18)
     headerTitle.Position = UDim2.new(0, 58, 0, 10)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "540CHEATS | Anime Dice v9"
+    headerTitle.Text = "540CHEATS | Anime Dice v10"
     headerTitle.TextColor3 = Color3.new(1, 1, 1)
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Font = FONT
@@ -358,7 +363,7 @@ local function runMainScript()
     headerSub.Size = UDim2.new(0, 250, 0, 14)
     headerSub.Position = UDim2.new(0, 58, 0, 29)
     headerSub.BackgroundTransparency = 1
-    headerSub.Text = "recursive-hide"
+    headerSub.Text = "full HUD + Topbar hide"
     headerSub.TextColor3 = DARK.subtext
     headerSub.TextXAlignment = Enum.TextXAlignment.Left
     headerSub.Font = FONT
@@ -591,7 +596,7 @@ local function runMainScript()
     end
 
     makeToggle(pages["Main"], "Auto Roll (Native)", CFG.AutoRoll, function(v) CFG.AutoRoll = v end)
-    makeToggle(pages["Main"], "Auto Hide UI (Recursive)", CFG.AutoHide, function(v) CFG.AutoHide = v end)
+    makeToggle(pages["Main"], "Auto Hide UI + Topbar", CFG.AutoHide, function(v) CFG.AutoHide = v end)
     makeToggle(pages["Main"], "Auto Skip", CFG.AutoSkip, function(v) CFG.AutoSkip = v end)
     makeToggle(pages["Main"], "Auto Keep", CFG.AutoKeep, function(v) CFG.AutoKeep = v end)
     makeToggle(pages["Main"], "Auto Rebirth", CFG.AutoRebirth, function(v) CFG.AutoRebirth = v end)
@@ -604,7 +609,7 @@ local function runMainScript()
     local info = Instance.new("TextLabel")
     info.Size = UDim2.new(1, 0, 0, 240)
     info.BackgroundColor3 = DARK.item; info.BorderSizePixel = 0
-    info.Text = "  540CHEATS | Anime Dice v9\n\n  ✓ Auto Roll (Native Remote)\n  ✓ Auto Hide UI (Recursive)\n  ✓ ซ่อนทุก Frame ใน Root.HUD\n  ✓ Debug print ใน Console\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
+    info.Text = "  540CHEATS | Anime Dice v10\n\n  ✓ Auto Roll (Native Remote)\n  ✓ Auto Hide HUD + Topbar\n  ✓ Recursive Hide ทุก Frame\n  ✓ Auto Skip / Keep / Upgrade\n  ✓ Auto Sell / Rebirth\n\n  discord.gg/540shop"
     info.TextColor3 = DARK.text; info.TextXAlignment = Enum.TextXAlignment.Left
     info.TextYAlignment = Enum.TextYAlignment.Top
     info.Font = FONT; info.TextSize = 12
@@ -651,7 +656,7 @@ local function runMainScript()
     watermark.Size = UDim2.new(0, 320, 0, 30)
     watermark.Position = UDim2.new(1, -340, 1, -50)
     watermark.BackgroundTransparency = 1
-    watermark.Text = "540CHEATS | Anime Dice v9"
+    watermark.Text = "540CHEATS | Anime Dice v10"
     watermark.TextColor3 = DARK.accent
     watermark.TextXAlignment = Enum.TextXAlignment.Right
     watermark.Font = FONT
@@ -661,7 +666,7 @@ local function runMainScript()
     watermark.TextStrokeColor3 = Color3.new(0, 0, 0)
     watermark.Parent = gui
 
-    print("[540CHEATS] Anime Dice v9 loaded")
+    print("[540CHEATS] Anime Dice v10 loaded")
 end
 
 -- =====================================================
@@ -723,7 +728,7 @@ local function showLoadingScreen(callback)
     title.Size = UDim2.new(1, 0, 0, 24)
     title.Position = UDim2.new(0, 0, 0, 90)
     title.BackgroundTransparency = 1
-    title.Text = "540CHEATS | Anime Dice v9"
+    title.Text = "540CHEATS | Anime Dice v10"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Font = FONT
@@ -1045,5 +1050,5 @@ end
 -- =====================================================
 -- MAIN ENTRY
 -- =====================================================
-print("[540CHEATS] Initializing Anime Dice v9...")
+print("[540CHEATS] Initializing Anime Dice v10...")
 showKeyPrompt()
