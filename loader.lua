@@ -1,9 +1,8 @@
 -- =====================================================
--- 540CHEATS v25 | Key + Loading + Full Script
+-- 540CHEATS v25 | No Save Key Edition
 -- =====================================================
 
 local KEY_URL = "https://raw.githubusercontent.com/dekchaimaboizzz-sys/540CHEATS-BYREKTZ/refs/heads/main/keys.txt"
-local SCRIPT_KEY_FILE = "540cheats_key.txt"
 
 local FONT = Enum.Font.RobotoMono
 local DARK = {
@@ -45,20 +44,6 @@ local function validateKey(userKey)
         if line:gsub("%s+", "") == cleanInput then return true end
     end
     return false, "Key ไม่ถูกต้อง"
-end
-
-local function getSavedKey()
-    if isfile and isfile(SCRIPT_KEY_FILE) then
-        local ok, key = pcall(function() return readfile(SCRIPT_KEY_FILE) end)
-        if ok and key and #key > 0 then return key end
-    end
-    return nil
-end
-
-local function saveKey(key)
-    if writefile then
-        pcall(function() writefile(SCRIPT_KEY_FILE, key) end)
-    end
 end
 
 -- =====================================================
@@ -1088,7 +1073,7 @@ local function showLoadingScreen(callback)
 end
 
 -- =====================================================
--- ★★★ KEY PROMPT - MASKED ★★★
+-- ★★★ KEY PROMPT - MASKED + NO SAVE ★★★
 -- =====================================================
 local function showKeyPrompt()
     local LP = game:GetService("Players").LocalPlayer
@@ -1306,9 +1291,8 @@ local function showKeyPrompt()
                 status.TextColor3 = DARK.success
                 btn.Text = "SUCCESS"
                 btn.BackgroundColor3 = DARK.success
-                saveKey(key)
 
-                -- ★ Delay 2 วินาที
+                -- ★ Delay 2 วินาที (ไม่ save key)
                 task.wait(2)
                 pcall(function() keyGui:Destroy() end)
 
@@ -1338,25 +1322,8 @@ local function showKeyPrompt()
 end
 
 -- =====================================================
--- MAIN ENTRY
+-- MAIN ENTRY — ★ ต้องใส่ key ทุกครั้ง
 -- =====================================================
 print("[540CHEATS] Initializing...")
-
-local savedKey = getSavedKey()
-if savedKey then
-    print("[540CHEATS] Found saved key — validating...")
-    local valid = validateKey(savedKey)
-    if valid then
-        print("[540CHEATS] OK Saved key valid")
-        showLoadingScreen(function()
-            local ok, err = pcall(runMainScript)
-            if not ok then warn("[540CHEATS] Script error: " .. tostring(err)) end
-        end)
-    else
-        print("[540CHEATS] X Saved key invalid — prompting")
-        showKeyPrompt()
-    end
-else
-    print("[540CHEATS] No saved key — prompting")
-    showKeyPrompt()
-end
+print("[540CHEATS] ต้องใส่ key ทุกครั้งที่รัน")
+showKeyPrompt()
