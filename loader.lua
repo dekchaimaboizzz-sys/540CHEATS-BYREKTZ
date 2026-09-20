@@ -57,6 +57,9 @@ end
 -- =====================================================
 -- ★★★ LOADING SCREEN ★★★
 -- =====================================================
+-- =====================================================
+-- ★★★ LOADING SCREEN v2 - SPECTACULAR ★★★
+-- =====================================================
 local function showLoadingScreen(callback)
     local LP = game:GetService("Players").LocalPlayer
     local playerGui = LP:WaitForChild("PlayerGui")
@@ -68,77 +71,387 @@ local function showLoadingScreen(callback)
     loadGui.DisplayOrder = 9999
     loadGui.Parent = playerGui
     
-    -- Overlay
+    -- === OVERLAY + VIGNETTE ===
     local overlay = Instance.new("Frame")
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.3
+    overlay.BackgroundTransparency = 1
     overlay.BorderSizePixel = 0
     overlay.Parent = loadGui
+    TweenService:Create(overlay, TweenInfo.new(0.4), {BackgroundTransparency = 0.25}):Play()
     
-    -- Card
+    -- === CARD ===
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(0, 420, 0, 200)
-    card.Position = UDim2.new(0.5, -210, 0.5, -100)
+    card.Size = UDim2.new(0, 460, 0, 260)
+    card.Position = UDim2.new(0.5, -230, 0.5, -130)
     card.BackgroundColor3 = DARK.bg
     card.BorderSizePixel = 0
     card.BackgroundTransparency = 1
     card.Parent = loadGui
-    local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 14); cc.Parent = card
-    local cs = Instance.new("UIStroke"); cs.Color = DARK.accent; cs.Thickness = 2; cs.Transparency = 1; cs.Parent = card
+    local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 16); cc.Parent = card
     
-    -- Header
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 54)
-    header.BackgroundColor3 = DARK.header
-    header.BorderSizePixel = 0
-    header.BackgroundTransparency = 1
-    header.Parent = card
-    local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 14); hc.Parent = header
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Color = DARK.accent
+    cardStroke.Thickness = 2
+    cardStroke.Transparency = 1
+    cardStroke.Parent = card
     
-    local hbBottom = Instance.new("Frame")
-    hbBottom.Size = UDim2.new(1, 0, 0, 12)
-    hbBottom.Position = UDim2.new(0, 0, 1, -12)
-    hbBottom.BackgroundColor3 = DARK.header
-    hbBottom.BorderSizePixel = 0
-    hbBottom.BackgroundTransparency = 1
-    hbBottom.Parent = header
+    -- === GLOWING BACKGROUND ===
+    local glowBg = Instance.new("Frame")
+    glowBg.Size = UDim2.new(1, 0, 0, 100)
+    glowBg.Position = UDim2.new(0, 0, 0, 0)
+    glowBg.BackgroundColor3 = Color3.fromRGB(0, 100, 180)
+    glowBg.BackgroundTransparency = 1
+    glowBg.BorderSizePixel = 0
+    glowBg.Parent = card
+    local gbc = Instance.new("UICorner"); gbc.CornerRadius = UDim.new(0, 16); gbc.Parent = glowBg
     
-    -- Logo container
-    local logoBg = Instance.new("Frame")
-    logoBg.Size = UDim2.new(0, 34, 0, 34)
-    logoBg.Position = UDim2.new(0, 14, 0, 10)
-    logoBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    logoBg.BorderSizePixel = 0
-    logoBg.BackgroundTransparency = 1
-    logoBg.Parent = header
-    local lbgc = Instance.new("UICorner"); lbgc.CornerRadius = UDim.new(0, 8); lbgc.Parent = logoBg
-    local lbgs = Instance.new("UIStroke"); lbgs.Color = DARK.headerAccent; lbgs.Thickness = 1; lbgs.Transparency = 1; lbgs.Parent = logoBg
+    -- === LOGO CONTAINER (กลาง) ===
+    local logoContainer = Instance.new("Frame")
+    logoContainer.Size = UDim2.new(0, 80, 0, 80)
+    logoContainer.Position = UDim2.new(0.5, -40, 0, 30)
+    logoContainer.BackgroundTransparency = 1
+    logoContainer.Parent = card
     
-    local icon = Instance.new("ImageLabel")
-    icon.Size = UDim2.new(0, 26, 0, 26)
-    icon.Position = UDim2.new(0.5, -13, 0.5, -13)
-    icon.BackgroundTransparency = 1
-    icon.Image = "rbxassetid://86571453491468"
-    icon.ImageTransparency = 1
-    icon.ScaleType = Enum.ScaleType.Fit
-    icon.Parent = logoBg
+    -- Rotating ring 1 (outer)
+    local ring1 = Instance.new("Frame")
+    ring1.AnchorPoint = Vector2.new(0.5, 0.5)
+    ring1.Size = UDim2.new(0, 76, 0, 76)
+    ring1.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ring1.BackgroundTransparency = 1
+    ring1.Parent = logoContainer
+    local r1c = Instance.new("UICorner"); r1c.CornerRadius = UDim.new(1, 0); r1c.Parent = ring1
+    local r1s = Instance.new("UIStroke"); r1s.Color = DARK.accent; r1s.Thickness = 2; r1s.Transparency = 0.5; r1s.Parent = ring1
+    
+    -- Rotating ring 2 (inner, thicker)
+    local ring2 = Instance.new("Frame")
+    ring2.AnchorPoint = Vector2.new(0.5, 0.5)
+    ring2.Size = UDim2.new(0, 68, 0, 68)
+    ring2.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ring2.BackgroundTransparency = 1
+    ring2.Parent = logoContainer
+    local r2c = Instance.new("UICorner"); r2c.CornerRadius = UDim.new(1, 0); r2c.Parent = ring2
+    local r2s = Instance.new("UIStroke"); r2s.Color = Color3.fromRGB(0, 255, 200); r2s.Thickness = 1.5; r2s.Transparency = 0.3; r2s.Parent = ring2
+    
+    -- Pulsing glow bg
+    local logoGlow = Instance.new("Frame")
+    logoGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+    logoGlow.Size = UDim2.new(0, 60, 0, 60)
+    logoGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    logoGlow.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    logoGlow.BackgroundTransparency = 1
+    logoGlow.BorderSizePixel = 0
+    logoGlow.Parent = logoContainer
+    local lgC = Instance.new("UICorner"); lgC.CornerRadius = UDim.new(1, 0); lgC.Parent = logoGlow
+    
+    -- Logo icon
+    local logoIcon = Instance.new("ImageLabel")
+    logoIcon.Size = UDim2.new(0, 48, 0, 48)
+    logoIcon.Position = UDim2.new(0.5, -24, 0.5, -24)
+    logoIcon.BackgroundTransparency = 1
+    logoIcon.Image = "rbxassetid://86571453491468"
+    logoIcon.ImageTransparency = 1
+    logoIcon.ScaleType = Enum.ScaleType.Fit
+    logoIcon.Parent = logoContainer
     
     task.spawn(function()
-        local ok, loaded = pcall(function() return icon.IsLoaded end)
+        local ok, loaded = pcall(function() return logoIcon.IsLoaded end)
         if not ok or not loaded then
             task.wait(0.5)
-            if not icon.IsLoaded then
-                icon:Destroy()
+            if logoIcon.Parent and not logoIcon.IsLoaded then
+                logoIcon:Destroy()
                 local e = Instance.new("TextLabel")
                 e.Size = UDim2.new(1, 0, 1, 0); e.BackgroundTransparency = 1
-                e.Text = "💠"; e.TextSize = 20; e.Font = FONT; e.TextColor3 = DARK.accent
+                e.Text = "💠"; e.TextSize = 32; e.Font = FONT; e.TextColor3 = DARK.accent
                 e.TextTransparency = 1
-                e.Parent = logoBg
+                e.Parent = logoContainer
                 TweenService:Create(e, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
             end
         end
     end)
+    
+    -- === TITLE ===
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 24)
+    title.Position = UDim2.new(0, 0, 0, 120)
+    title.BackgroundTransparency = 1
+    title.Text = "540CHEATS"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.Font = FONT
+    title.TextSize = 20
+    title.TextTransparency = 1
+    title.Parent = card
+    
+    local titleGlow = Instance.new("TextLabel")
+    titleGlow.Size = UDim2.new(1, 0, 0, 24)
+    titleGlow.Position = UDim2.new(0, 0, 0, 120)
+    titleGlow.BackgroundTransparency = 1
+    titleGlow.Text = "540CHEATS"
+    titleGlow.TextColor3 = DARK.accent
+    titleGlow.TextXAlignment = Enum.TextXAlignment.Center
+    titleGlow.Font = FONT
+    titleGlow.TextSize = 20
+    titleGlow.TextTransparency = 1
+    titleGlow.ZIndex = 0
+    titleGlow.Parent = card
+    
+    -- === SUBTITLE ===
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, 0, 0, 16)
+    subtitle.Position = UDim2.new(0, 0, 0, 145)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "discord.gg/540shop"
+    subtitle.TextColor3 = DARK.subtext
+    subtitle.TextXAlignment = Enum.TextXAlignment.Center
+    subtitle.Font = FONT
+    subtitle.TextSize = 11
+    subtitle.TextTransparency = 1
+    subtitle.Parent = card
+    
+    -- === PROGRESS BAR ===
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -60, 0, 10)
+    barBg.Position = UDim2.new(0, 30, 0, 180)
+    barBg.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    barBg.BorderSizePixel = 0
+    barBg.BackgroundTransparency = 1
+    barBg.Parent = card
+    local bbc = Instance.new("UICorner"); bbc.CornerRadius = UDim.new(1, 0); bbc.Parent = barBg
+    local bbs = Instance.new("UIStroke"); bbs.Color = DARK.border; bbs.Thickness = 1; bbs.Transparency = 1; bbs.Parent = barBg
+    
+    local barFill = Instance.new("Frame")
+    barFill.Size = UDim2.new(0, 0, 1, 0)
+    barFill.BackgroundColor3 = DARK.accent
+    barFill.BorderSizePixel = 0
+    barFill.Parent = barBg
+    local bfc = Instance.new("UICorner"); bfc.CornerRadius = UDim.new(1, 0); bfc.Parent = barFill
+    
+    -- Shimmer effect
+    local shimmer = Instance.new("Frame")
+    shimmer.Size = UDim2.new(0, 40, 1, 0)
+    shimmer.Position = UDim2.new(0, -50, 0, 0)
+    shimmer.BackgroundColor3 = Color3.new(1, 1, 1)
+    shimmer.BackgroundTransparency = 0.7
+    shimmer.BorderSizePixel = 0
+    shimmer.Parent = barFill
+    local shc = Instance.new("UICorner"); shc.CornerRadius = UDim.new(1, 0); shc.Parent = shimmer
+    
+    -- === STATUS TEXT ===
+    local statusText = Instance.new("TextLabel")
+    statusText.Size = UDim2.new(1, -60, 0, 16)
+    statusText.Position = UDim2.new(0, 30, 0, 200)
+    statusText.BackgroundTransparency = 1
+    statusText.Text = "> Initializing..."
+    statusText.TextColor3 = DARK.subtext
+    statusText.TextXAlignment = Enum.TextXAlignment.Left
+    statusText.Font = FONT
+    statusText.TextSize = 11
+    statusText.TextTransparency = 1
+    statusText.Parent = card
+    
+    -- === PERCENT ===
+    local percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(0, 60, 0, 16)
+    percentLabel.Position = UDim2.new(1, -90, 0, 200)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Text = "0%"
+    percentLabel.TextColor3 = DARK.accent
+    percentLabel.TextXAlignment = Enum.TextXAlignment.Right
+    percentLabel.Font = FONT
+    percentLabel.TextSize = 11
+    percentLabel.TextTransparency = 1
+    percentLabel.Parent = card
+    
+    -- === FOOTER ===
+    local footer = Instance.new("TextLabel")
+    footer.Size = UDim2.new(1, -60, 0, 14)
+    footer.Position = UDim2.new(0, 30, 1, -28)
+    footer.BackgroundTransparency = 1
+    footer.Text = "540CHEATS © discord.gg/540shop"
+    footer.TextColor3 = DARK.subtext
+    footer.TextXAlignment = Enum.TextXAlignment.Left
+    footer.Font = FONT
+    footer.TextSize = 9
+    footer.TextTransparency = 1
+    footer.Parent = card
+    
+    -- === FADE IN ENTRANCE ===
+    task.spawn(function()
+        TweenService:Create(card, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0, Size = UDim2.new(0, 460, 0, 260)
+        }):Play()
+        TweenService:Create(cardStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
+        TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        TweenService:Create(subtitle, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        TweenService:Create(barBg, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(bbs, TweenInfo.new(0.5), {Transparency = 0}):Play()
+        TweenService:Create(statusText, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        TweenService:Create(percentLabel, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        TweenService:Create(footer, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        if logoIcon.Parent then
+            TweenService:Create(logoIcon, TweenInfo.new(0.5), {ImageTransparency = 0}):Play()
+        end
+    end)
+    
+    -- === ROTATING RINGS (continuous) ===
+    local ringRotation = 0
+    task.spawn(function()
+        while card.Parent do
+            task.wait(0.02)
+            ringRotation = ringRotation + 3
+            ring1.Rotation = ringRotation
+            ring2.Rotation = -ringRotation * 1.5
+        end
+    end)
+    
+    -- === PULSING LOGO GLOW ===
+    task.spawn(function()
+        while card.Parent do
+            local tween1 = TweenService:Create(logoGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.85})
+            tween1:Play()
+            tween1.Completed:Wait()
+            if not card.Parent then break end
+            local tween2 = TweenService:Create(logoGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.95})
+            tween2:Play()
+            tween2.Completed:Wait()
+        end
+    end)
+    
+    -- === TITLE GLOW PULSE ===
+    task.spawn(function()
+        while card.Parent do
+            TweenService:Create(titleGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {TextTransparency = 0.7}):Play()
+            task.wait(1.2)
+            if not card.Parent then break end
+            TweenService:Create(titleGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {TextTransparency = 0.95}):Play()
+            task.wait(1.2)
+        end
+    end)
+    
+    -- === SHIMMER EFFECT ===
+    task.spawn(function()
+        while card.Parent do
+            shimmer.Position = UDim2.new(0, -50, 0, 0)
+            TweenService:Create(shimmer, TweenInfo.new(1.2, Enum.EasingStyle.Linear), {
+                Position = UDim2.new(1, 0, 0, 0)
+            }):Play()
+            task.wait(1.3)
+        end
+    end)
+    
+    -- === ANIMATED DOTS FOR STATUS ===
+    local dotState = 0
+    local baseStatus = "> Initializing"
+    task.spawn(function()
+        while card.Parent do
+            task.wait(0.4)
+            dotState = (dotState + 1) % 4
+            statusText.Text = baseStatus .. string.rep(".", dotState)
+        end
+    end)
+    
+    -- === PROGRESS ANIMATION ===
+    task.spawn(function()
+        task.wait(0.6)
+        
+        local steps = {
+            { pct = 12, text = "> Loading modules", wait = 0.35 },
+            { pct = 28, text = "> Preparing UI", wait = 0.3 },
+            { pct = 45, text = "> Loading ESP", wait = 0.4 },
+            { pct = 62, text = "> Loading Aimbot", wait = 0.3 },
+            { pct = 78, text = "> Applying settings", wait = 0.3 },
+            { pct = 92, text = "> Finalizing", wait = 0.25 },
+            { pct = 100, text = "> Ready!", wait = 0.5 },
+        }
+        
+        local currentPct = 0
+        for _, step in ipairs(steps) do
+            baseStatus = step.text
+            
+            -- Smooth percentage increase
+            local targetPct = step.pct
+            local startPct = currentPct
+            local duration = step.wait
+            local fps = 60
+            local frames = math.max(1, math.floor(duration * fps))
+            
+            for i = 1, frames do
+                task.wait(duration / frames)
+                local p = i / frames
+                local curr = math.floor(startPct + (targetPct - startPct) * p)
+                percentLabel.Text = curr .. "%"
+                barFill.Size = UDim2.new(curr / 100, 0, 1, 0)
+            end
+            
+            percentLabel.Text = targetPct .. "%"
+            barFill.Size = UDim2.new(targetPct / 100, 0, 1, 0)
+            currentPct = targetPct
+        end
+        
+        task.wait(0.4)
+        
+        -- Final flash
+        percentLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        barFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        
+        -- Particle burst (simple)
+        for i = 1, 8 do
+            task.spawn(function()
+                local particle = Instance.new("Frame")
+                particle.Size = UDim2.new(0, 6, 0, 6)
+                particle.Position = UDim2.new(0.5, -3, 0.5, -3)
+                particle.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+                particle.BackgroundTransparency = 0
+                particle.BorderSizePixel = 0
+                particle.ZIndex = 100
+                particle.Parent = card
+                local pc = Instance.new("UICorner"); pc.CornerRadius = UDim.new(1, 0); pc.Parent = particle
+                
+                local angle = (i / 8) * math.pi * 2
+                local dist = 200
+                local tx = math.cos(angle) * dist
+                local ty = math.sin(angle) * dist
+                
+                TweenService:Create(particle, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(0.5, tx - 3, 0.5, ty - 3),
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(0, 2, 0, 2)
+                }):Play()
+                
+                task.wait(0.9)
+                particle:Destroy()
+            end)
+        end
+        
+        task.wait(0.6)
+        
+        -- Fade out
+        TweenService:Create(card, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 400, 0, 220)
+        }):Play()
+        TweenService:Create(cardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+        TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(titleGlow, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(subtitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(barBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(statusText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(percentLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(footer, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(overlay, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+        if logoIcon.Parent then
+            TweenService:Create(logoIcon, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
+        end
+        TweenService:Create(ring1, TweenInfo.new(0.5), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        TweenService:Create(ring2, TweenInfo.new(0.5), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        
+        task.wait(0.55)
+        loadGui:Destroy()
+        
+        if callback then callback() end
+    end)
+end
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0, 200, 0, 18)
